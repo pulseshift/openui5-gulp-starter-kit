@@ -1,0 +1,108 @@
+{
+    "_version": "1.2.0",
+    "sap.app": {
+        "_version": "1.2.0",
+        "id": "ps",
+        "type": "application",
+        "i18n": "i18n/i18n.properties",
+        "applicationVersion": {
+            "version": "1.0.0"
+        },
+        "title": "{{appTitle}}",
+        "description": "{{appDescription}}"
+    },
+    "sap.ui": {
+        "_version": "1.2.0",
+        "technology": "UI5",
+        "icons": {
+            "icon": "",
+            "favIcon": "",
+            "phone": "",
+            "phone@2": "",
+            "tablet": "",
+            "tablet@2": ""
+        },
+        "deviceTypes": {
+            "desktop": true,
+            "tablet": true,
+            "phone": true
+        },
+        "supportedThemes": ["sap_belize"]
+    },
+    "sap.ui5": {
+        "_version": "1.2.0",
+        "dependencies": {
+            "minUI5Version": "1.30.0",
+            "libs": {
+                "sap.ui.core": {},
+                "sap.m": {},
+                "sap.ui.layout": {}
+            }
+        },
+        "contentDensities": {
+            "compact": true,
+            "cozy": true
+        },
+        "models": {
+            "i18n": {
+                "type": "sap.ui.model.resource.ResourceModel",
+                "settings": {
+                    "bundleName": "ps.i18n.i18n"
+                }
+            }
+        },
+        "resources": {
+            "css": [{
+                "uri": "css/style.css"
+            }]
+        },
+        "rootView": "ps.views.App.index",
+        "routing": {
+            "config": {
+                "routerClass": "sap.m.routing.Router",
+                "viewType": "XML",
+                "viewPath": "ps.views",
+                "controlId": "app",
+                "controlAggregation": "pages",
+                "transition": "slide",
+                "clearTarget": true,
+                "bypassed": {
+                    "target": "notFound"
+                }
+            },
+            "targets": {
+                "main": {
+                    "viewType": "XML",
+                    "transition": "slide",
+                    "viewName": "Main.index",
+                    "viewLevel": 1
+                },
+                "detail": {
+                    "viewType": "XML",
+                    "transition": "slide",
+                    "viewName": "Detail.index",
+                    "viewLevel": 1
+                },
+                "notFound": {
+                    "viewType": "XML",
+                    "transition": "slide",
+                    "viewName": "NotFound.index",
+                    "viewLevel": 2
+                }
+            },
+            "routes": [{
+                "name": "root",
+                "pattern": "",
+                "target": ["main"]
+            }, {
+                "name": "main",
+                "pattern": "/main",
+                "target": ["main"]
+            }, {
+                "name": "detail",
+                "pattern": "/detail",
+                "target": ["detail"]
+            }]
+        }
+    }
+}

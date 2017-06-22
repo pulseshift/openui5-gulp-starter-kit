@@ -1,0 +1,11 @@
+{
+    "presets": ["ui5", "es2015", "stage-0"],
+    "plugins": [
+        /*"transform-runtime",*/
+        "transform-function-bind",
+        "syntax-flow",
+        "transform-flow-comments"
+    ],
+    /* check if source maps are working */
+    "sourceMaps": "inline"
+}

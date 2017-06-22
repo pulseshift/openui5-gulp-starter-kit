@@ -1,0 +1,16 @@
+<mvc:View
+  controllerName="ps.views.Main.index"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m">
+  <Page
+    class="sapUiResponsiveContentPadding"
+    title="{i18n>title}"
+    enableScrolling="false">
+    <content>
+      <!-- <Label text="Hallo"/> -->
+      <Button
+        text="{/main/counter}"
+        press="onDispatchAction" />
+    </content>
+  </Page>
+</mvc:View>

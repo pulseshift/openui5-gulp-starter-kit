@@ -1,0 +1,17 @@
+### OSX ###
+*.DS_Store
+
+### IDE ###
+.imdone/
+
+### Build Process ###
+/dev/
+/dist/
+
+### Node ###
+node_modules/
+*.log
+
+## MISC ##
+/.idea/
+TODO.md
