@@ -17,21 +17,21 @@
     </script>
 
     <script>
-      sap.ui.getCore().attachInit(function() {
-        new sap.m.Shell({
-          backgroundColor: '',
-          backgroundImage: '',
-          backgroundRepeat: false,
-          backgroundOpacity: 1,
-          appWidthLimited: true,
-          app: new sap.ui.core.ComponentContainer({
-            height: '100%',
-            width: '100%',
-            name: 'ps'
-          })
-        }).placeAt('content');
-      });
-    </script>
+    sap.ui.getCore().attachInit(function() {
+  new sap.m.Shell({
+    backgroundColor: '',
+    backgroundImage: '',
+    backgroundRepeat: false,
+    backgroundOpacity: 1,
+    appWidthLimited: true,
+    app: new sap.ui.core.ComponentContainer({
+      height: '100%',
+      width: '100%',
+      name: 'ps'
+    })
+  }).placeAt('content')
+})
+</script>
   </head>
 
   <body class="sapUiBody" id="content">

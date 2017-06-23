@@ -36,7 +36,8 @@ const paths = {
       `${SRC}/**/*.properties`,
       `${SRC}/**/*.json`,
       `${SRC}/**/*.png`,
-      `${SRC}/**/*.jpg`
+      `${SRC}/**/*.jpg`,
+      `${SRC}/**/*.jpeg`
     ],
     dest: {
       dev: DEV,
@@ -49,43 +50,48 @@ const paths = {
       dev: DEV,
       dist: DIST
     }
+  },
+  html: {
+    src: [`${SRC}/**/*.html`],
+    dest: {
+      dev: DEV,
+      dist: DIST
+    }
+  },
+  styles: {
+    src: [`${SRC}/**/*.less`],
+    dest: {
+      dev: DEV,
+      dist: DIST
+    }
   }
-  // styles: {
-  //   src: ['src/styles/**/*.less'],
-  //   dest: 'assets/styles/'
-  // },
 }
 
 /**
- * Gulp start task (development mode).
+ * Gulp 'start' task (development mode).
  * @description Call update and start file watcher.
  * @public
  */
-const start = gulp.series(clean, gulp.parallel(assets, scripts), watch, server)
+const start = gulp.series(
+  clean,
+  gulp.parallel(assets, scripts, html, styles),
+  server,
+  watch
+)
 export default start
-//   gulpSequence(
-//     ['clean', 'i18n', 'checkout-ui5'],
-//     ['assets', 'js', 'index-html'],
-//     ['less', 'ui5-theme-build'],
-//     done
-//   )
 
 /**
- * Gulp build task (distribution mode).
+ * Gulp 'build' task (distribution mode).
  * @description Build the complete app to run in production environment.
  * @public
  */
-const build = gulp.series(cleanDist, gulp.parallel(assetsDist, scriptsDist))
+const build = gulp.series(
+  cleanDist,
+  gulp.parallel(assetsDist, scriptsDist, htmlDist, stylesDist)
+  // ui5preload,
+  // ui5CacheBuster
+)
 export { build }
-// gulpSequence(
-//   'clean-dist',
-//   'checkout-ui5-dist',
-//   ['assets-dist', 'js-dist'],
-//   ['less-dist', 'ui5-theme-build-dist', 'ui5preload', 'ui5PSLib-preload'],
-//   'pathname-hashing',
-//   'index-html-dist',
-//   done
-// )
 
 /* ----------------------------------------------------------- *
  * return success message that start task started
@@ -104,11 +110,11 @@ function server(done) {
  * ----------------------------------------------------------- */
 
 // task for development mode
-function watch(done) {
-  // watch some stuff...
-  // gulp.watch(paths.scripts.src, scripts)
-  // gulp.watch(paths.styles.src, styles)
-  done()
+function watch() {
+  gulp.watch(paths.assets.src, assets)
+  gulp.watch(paths.scripts.src, scripts)
+  gulp.watch(paths.html.src, html)
+  gulp.watch(paths.styles.src, styles)
 }
 
 /* ----------------------------------------------------------- *
@@ -138,7 +144,7 @@ function assets() {
         // filter out unchanged files between runs
         { since: gulp.lastRun(assets) }
       )
-      // don't exit gulp (especially the watcher task) on error
+      // don't exit the running watcher task on errors
       .pipe(plumber())
       .pipe(gulp.dest(paths.assets.dest.dev))
   )
@@ -162,7 +168,7 @@ function scripts() {
         // filter out unchanged files between runs
         { since: gulp.lastRun(scripts) }
       )
-      // don't exit gulp (especially the watcher task) on error
+      // don't exit the running watcher task on errors
       .pipe(plumber())
       // babel will run with the settings defined in `.babelrc` file
       .pipe(babel())
@@ -179,4 +185,52 @@ function scriptsDist() {
       .pipe(babel())
       .pipe(gulp.dest(paths.scripts.dest.dist))
   )
+}
+
+/* ----------------------------------------------------------- *
+ * optimize HTML (.html, ...)
+ * ----------------------------------------------------------- */
+
+// task for development mode
+function html() {
+  return (
+    gulp
+      .src(
+        paths.html.src,
+        // filter out unchanged files between runs
+        { since: gulp.lastRun(html) }
+      )
+      // don't exit the running watcher task on errors
+      .pipe(plumber())
+      .pipe(gulp.dest(paths.html.dest.dev))
+  )
+}
+
+// enhanced or optimized distribution task
+function htmlDist() {
+  return gulp.src(paths.html.src).pipe(gulp.dest(paths.html.dest.dist))
+}
+
+/* ----------------------------------------------------------- *
+ * compile and automatically prefix stylesheets (.less, ...)
+ * ----------------------------------------------------------- */
+
+// task for development mode
+function styles() {
+  return (
+    gulp
+      .src(
+        paths.styles.src,
+        // filter out unchanged files between runs
+        { since: gulp.lastRun(styles) }
+      )
+      // don't exit the running watcher task on errors
+      .pipe(plumber())
+      .pipe(gulp.dest(paths.styles.dest.dev))
+  )
+}
+
+// enhanced or optimized distribution task
+function stylesDist() {
+  return gulp.src(paths.styles.src).pipe(gulp.dest(paths.styles.dest.dist))
 }
