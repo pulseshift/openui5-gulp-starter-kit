@@ -9,10 +9,12 @@ Short description of contained templates and how to use them.
 ### /templates
 In the `/templates` folder you find simple single file templates for e.g. UI5 *Controller* or *CustomControls*. All of them are based on code and comment best practices.
 
-### /src/redux-ui5-app
+### /src/openui5-todo-app
 A complete UI5 app example with best practice folder structure and build infrastructure. In this case, the app represents a boilerplate to combine OpenUI5 with Redux.
 
 #### How to setup?
+1. Install yarn.
+2. Install node
 1. Install required JavaScript modules. Execute from the root directory of this project:
 ```
 $ yarn
