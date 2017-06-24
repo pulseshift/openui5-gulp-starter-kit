@@ -24,11 +24,19 @@
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "babel-register": "^6.24.1",
+    "browser-sync": "^2.18.12",
     "del": "^3.0.0",
     "gulp": "gulpjs/gulp#4.0",
-    "gulp-plumber": "^1.1.0",
-    "gulp-util": "^3.0.8",
     "gulp-babel": "^6.1.2",
-    "gulp-cli": "^1.3.0"
+    "gulp-clean-css": "^3.4.2",
+    "gulp-cli": "^1.3.0",
+    "gulp-htmlmin": "^3.0.0",
+    "gulp-if": "^2.0.2",
+    "gulp-imagemin": "^3.3.0",
+    "gulp-less": "^3.3.2",
+    "gulp-plumber": "^1.1.0",
+    "gulp-uglify": "^3.0.0",
+    "gulp-util": "^3.0.8",
+    "less-plugin-autoprefix": "^1.5.1"
   }
 }

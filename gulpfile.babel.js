@@ -14,9 +14,18 @@
 
 import gulp from 'gulp'
 import gutil from 'gulp-util'
+import gulpif from 'gulp-if'
 import plumber from 'gulp-plumber'
 import babel from 'gulp-babel'
+import uglify from 'gulp-uglify'
+import htmlmin from 'gulp-htmlmin'
+import imagemin from 'gulp-imagemin'
+import cleanCSS from 'gulp-clean-css'
+import less from 'gulp-less'
+import LessAutoprefix from 'less-plugin-autoprefix'
 import del from 'del'
+import server from 'browser-sync'
+import pkg from './package.json'
 
 /*
  * CONFIGURATION
@@ -35,9 +44,7 @@ const paths = {
     src: [
       `${SRC}/**/*.properties`,
       `${SRC}/**/*.json`,
-      `${SRC}/**/*.png`,
-      `${SRC}/**/*.jpg`,
-      `${SRC}/**/*.jpeg`
+      `${SRC}/**/*.{jpg,jpeg,png}`
     ],
     dest: {
       dev: DEV,
@@ -75,7 +82,6 @@ const paths = {
 const start = gulp.series(
   clean,
   gulp.parallel(assets, scripts, html, styles),
-  server,
   watch
 )
 export default start
@@ -94,39 +100,53 @@ const build = gulp.series(
 export { build }
 
 /* ----------------------------------------------------------- *
- * return success message that start task started
- * ----------------------------------------------------------- */
-
-// task for development mode
-function server(done) {
-  const sSuccessMessage =
-    '(Server started, use Ctrl+C to stop and go back to the console...)'
-  gutil.log(gutil.colors.green(sSuccessMessage))
-  done()
-}
-
-/* ----------------------------------------------------------- *
  * watch files for changes
  * ----------------------------------------------------------- */
 
-// task for development mode
+// [development build]
 function watch() {
-  gulp.watch(paths.assets.src, assets)
-  gulp.watch(paths.scripts.src, scripts)
-  gulp.watch(paths.html.src, html)
-  gulp.watch(paths.styles.src, styles)
+  const sSuccessMessage =
+    '(Server started, use Ctrl+C to stop and go back to the console...)'
+
+  gulp.watch(paths.assets.src, gulp.series(assets, reload))
+  gulp.watch(paths.scripts.src, gulp.series(scripts, reload))
+  gulp.watch(paths.html.src, gulp.series(html, reload))
+  gulp.watch(paths.styles.src, gulp.series(styles, reload))
+
+  // start HTTP server
+  server.init({
+    // learn more about the powerful options (proxy, middleware, etc.) here:
+    // https://www.browsersync.io/docs/options
+    server: {
+      baseDir: `./${DEV}`
+    }
+    // proxy: 'yourlocal.dev'
+  })
+
+  // log success message
+  gutil.log(gutil.colors.green(sSuccessMessage))
+}
+
+/* ----------------------------------------------------------- *
+ * reload browser
+ * ----------------------------------------------------------- */
+
+// [development build]
+function reload(done) {
+  server.reload()
+  done()
 }
 
 /* ----------------------------------------------------------- *
  * clean development directory
  * ----------------------------------------------------------- */
 
-// task for development mode
+// [development build]
 function clean() {
   return del(`${DEV}/**/*`)
 }
 
-// enhanced or optimized distribution task
+// [production build]
 function cleanDist() {
   return del(`${DIST}/**/*`)
 }
@@ -135,7 +155,7 @@ function cleanDist() {
  * copy assets to destination folder (.png, .jpg, .json, ...)
  * ----------------------------------------------------------- */
 
-// task for development mode
+// [development build]
 function assets() {
   return (
     gulp
@@ -146,11 +166,21 @@ function assets() {
       )
       // don't exit the running watcher task on errors
       .pipe(plumber())
+      // optimize size and quality of images
+      .pipe(
+        gulpif(
+          /.*\.(jpg|jpeg|png)$/,
+          imagemin({
+            progressive: true,
+            interlaced: true
+          })
+        )
+      )
       .pipe(gulp.dest(paths.assets.dest.dev))
   )
 }
 
-// enhanced or optimized distribution task
+// [production build]
 function assetsDist() {
   return gulp.src(paths.assets.src).pipe(gulp.dest(paths.assets.dest.dist))
 }
@@ -159,7 +189,7 @@ function assetsDist() {
  * process scripts and transpiles ES2015 code to ES5 (.js, ...)
  * ----------------------------------------------------------- */
 
-// task for development mode
+// [development build]
 function scripts() {
   return (
     gulp
@@ -176,13 +206,14 @@ function scripts() {
   )
 }
 
-// enhanced or optimized distribution task
+// [production build]
 function scriptsDist() {
   return (
     gulp
       .src(paths.scripts.src)
       // babel will run with the settings defined in `.babelrc` file
       .pipe(babel())
+      .pipe(uglify())
       .pipe(gulp.dest(paths.scripts.dest.dist))
   )
 }
@@ -191,7 +222,7 @@ function scriptsDist() {
  * optimize HTML (.html, ...)
  * ----------------------------------------------------------- */
 
-// task for development mode
+// [development build]
 function html() {
   return (
     gulp
@@ -206,17 +237,33 @@ function html() {
   )
 }
 
-// enhanced or optimized distribution task
+// [production build]
 function htmlDist() {
-  return gulp.src(paths.html.src).pipe(gulp.dest(paths.html.dest.dist))
+  return gulp
+    .src(paths.html.src)
+    .pipe(
+      htmlmin({
+        removeComments: true,
+        collapseWhitespace: true,
+        collapseBooleanAttributes: true,
+        removeAttributeQuotes: true,
+        removeRedundantAttributes: true,
+        removeEmptyAttributes: true,
+        removeScriptTypeAttributes: true,
+        removeStyleLinkTypeAttributes: true,
+        removeOptionalTags: true
+      })
+    )
+    .pipe(gulp.dest(paths.html.dest.dist))
 }
 
 /* ----------------------------------------------------------- *
  * compile and automatically prefix stylesheets (.less, ...)
  * ----------------------------------------------------------- */
 
-// task for development mode
+// [development build]
 function styles() {
+  const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
   return (
     gulp
       .src(
@@ -226,11 +273,29 @@ function styles() {
       )
       // don't exit the running watcher task on errors
       .pipe(plumber())
+      .pipe(
+        less({
+          plugins: [autoprefix]
+        })
+      )
       .pipe(gulp.dest(paths.styles.dest.dev))
   )
 }
 
-// enhanced or optimized distribution task
+// [production build]
 function stylesDist() {
-  return gulp.src(paths.styles.src).pipe(gulp.dest(paths.styles.dest.dist))
+  const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
+  return gulp
+    .src(paths.styles.src)
+    .pipe(
+      less({
+        plugins: [autoprefix]
+      })
+    )
+    .pipe(
+      cleanCSS({
+        level: 2
+      })
+    )
+    .pipe(gulp.dest(paths.styles.dest.dist))
 }
