@@ -5,27 +5,42 @@
  *
  *  Licensed under the MIT License.
  *
- *  This gulpfile makes use of new JavaScript features.
+ *  This file makes use of new JavaScript features.
  *  Babel handles this without us having to do anything. It just works.
  *  You can read more about the new JavaScript features here:
  *  https://babeljs.io/docs/learn-es2015/
  *
  */
 
+import pkg from './package.json'
 import gulp from 'gulp'
 import gutil from 'gulp-util'
 import gulpif from 'gulp-if'
+import rename from 'gulp-rename'
 import plumber from 'gulp-plumber'
 import babel from 'gulp-babel'
 import uglify from 'gulp-uglify'
 import htmlmin from 'gulp-htmlmin'
+import prettydata from 'gulp-pretty-data'
 import imagemin from 'gulp-imagemin'
 import cleanCSS from 'gulp-clean-css'
 import less from 'gulp-less'
+import tap from 'gulp-tap'
+import ui5preload from 'gulp-ui5-preload'
+import ui5Bust from './scripts/ui5-cache-buster'
 import LessAutoprefix from 'less-plugin-autoprefix'
 import del from 'del'
+import path from 'path'
 import server from 'browser-sync'
-import pkg from './package.json'
+import handlebars from 'handlebars'
+import gulpHandlebars from 'gulp-handlebars-html'
+
+const hdlbars = gulpHandlebars(handlebars)
+
+// register handlebars helper function
+handlebars.registerHelper('secure', function(str) {
+  return new handlebars.SafeString(str)
+})
 
 /*
  * CONFIGURATION
@@ -40,37 +55,26 @@ const DIST = 'dist'
 
 // paths used in our app
 const paths = {
+  entry: {
+    src: [pkg.main]
+  },
   assets: {
     src: [
       `${SRC}/**/*.properties`,
       `${SRC}/**/*.json`,
-      `${SRC}/**/*.{jpg,jpeg,png}`
-    ],
-    dest: {
-      dev: DEV,
-      dist: DIST
-    }
+      `${SRC}/**/*.xml`,
+      `${SRC}/**/*.{jpg,jpeg,png,svg,ico}`
+    ]
   },
   scripts: {
-    src: [`${SRC}/**/*.js`],
-    dest: {
-      dev: DEV,
-      dist: DIST
-    }
-  },
-  html: {
-    src: [`${SRC}/**/*.html`],
-    dest: {
-      dev: DEV,
-      dist: DIST
-    }
+    src: [`${SRC}/**/*.js`]
   },
   styles: {
-    src: [`${SRC}/**/*.less`],
-    dest: {
-      dev: DEV,
-      dist: DIST
-    }
+    src: [`${SRC}/**/*.less`]
+  },
+  cacheBuster: {
+    // this should be the result file of task 'entryDist'
+    src: [`${DIST}/index.html`]
   }
 }
 
@@ -81,7 +85,7 @@ const paths = {
  */
 const start = gulp.series(
   clean,
-  gulp.parallel(assets, scripts, html, styles),
+  gulp.parallel(entry, assets, scripts, styles),
   watch
 )
 export default start
@@ -93,9 +97,9 @@ export default start
  */
 const build = gulp.series(
   cleanDist,
-  gulp.parallel(assetsDist, scriptsDist, htmlDist, stylesDist)
-  // ui5preload,
-  // ui5CacheBuster
+  gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
+  ui5preloads,
+  ui5CacheBuster
 )
 export { build }
 
@@ -108,6 +112,7 @@ function watch() {
   const sSuccessMessage =
     '(Server started, use Ctrl+C to stop and go back to the console...)'
 
+  // start watchers
   gulp.watch(paths.assets.src, gulp.series(assets, reload))
   gulp.watch(paths.scripts.src, gulp.series(scripts, reload))
   gulp.watch(paths.html.src, gulp.series(html, reload))
@@ -152,6 +157,71 @@ function cleanDist() {
 }
 
 /* ----------------------------------------------------------- *
+ * optimize and compile app entry (src/index.handlebars)
+ * ----------------------------------------------------------- */
+
+// [helper function]
+function getHandlebarsProps() {
+  return {
+    indexTitle: pkg.ui5.indexTitle,
+    // create resource roots string
+    resourceroots: JSON.stringify(
+      pkg.ui5.apps.reduce(
+        (oResult, oApp) =>
+          Object.assign(oResult, {
+            [oApp.name]: path.relative(path.parse(pkg.main).dir, oApp.path)
+          }),
+        {}
+      )
+    )
+  }
+}
+
+// [development build]
+function entry() {
+  return (
+    gulp
+      .src(
+        paths.entry.src,
+        // filter out unchanged files between runs
+        { since: gulp.lastRun(entry) }
+      )
+      // don't exit the running watcher task on errors
+      .pipe(plumber())
+      // compile handlebars to HTML
+      .pipe(hdlbars(getHandlebarsProps()))
+      .pipe(rename({ extname: '.html' }))
+      .pipe(gulp.dest(DEV))
+  )
+}
+
+// [production build]
+function entryDist() {
+  return (
+    gulp
+      .src(paths.entry.src)
+      // compile handlebars to HTML
+      .pipe(hdlbars(getHandlebarsProps()))
+      // minify HTML
+      .pipe(
+        htmlmin({
+          removeComments: true,
+          collapseWhitespace: true,
+          collapseBooleanAttributes: true,
+          removeAttributeQuotes: true,
+          removeRedundantAttributes: true,
+          removeEmptyAttributes: true,
+          removeScriptTypeAttributes: true,
+          removeStyleLinkTypeAttributes: true,
+          removeOptionalTags: true
+        })
+      )
+      .pipe(rename({ extname: '.html' }))
+      .pipe(gulp.dest(DIST))
+  )
+}
+
+/* ----------------------------------------------------------- *
  * copy assets to destination folder (.png, .jpg, .json, ...)
  * ----------------------------------------------------------- */
 
@@ -176,13 +246,39 @@ function assets() {
           })
         )
       )
-      .pipe(gulp.dest(paths.assets.dest.dev))
+      .pipe(gulp.dest(DEV))
   )
 }
 
 // [production build]
 function assetsDist() {
-  return gulp.src(paths.assets.src).pipe(gulp.dest(paths.assets.dest.dist))
+  return (
+    gulp
+      .src(paths.assets.src)
+      // optimize size and quality of images
+      .pipe(
+        gulpif(
+          /.*\.(jpg|jpeg|png)$/,
+          imagemin({
+            progressive: true,
+            interlaced: true
+          })
+        )
+      )
+      // minify XML, SVG and JSON
+      .pipe(
+        gulpif(
+          /.*\.(xml|json|svg)$/,
+          prettydata({
+            type: 'minify',
+            extensions: {
+              svg: 'xml'
+            }
+          })
+        )
+      )
+      .pipe(gulp.dest(DIST))
+  )
 }
 
 /* ----------------------------------------------------------- *
@@ -202,7 +298,7 @@ function scripts() {
       .pipe(plumber())
       // babel will run with the settings defined in `.babelrc` file
       .pipe(babel())
-      .pipe(gulp.dest(paths.scripts.dest.dev))
+      .pipe(gulp.dest(DEV))
   )
 }
 
@@ -213,48 +309,20 @@ function scriptsDist() {
       .src(paths.scripts.src)
       // babel will run with the settings defined in `.babelrc` file
       .pipe(babel())
-      .pipe(uglify())
-      .pipe(gulp.dest(paths.scripts.dest.dist))
-  )
-}
-
-/* ----------------------------------------------------------- *
- * optimize HTML (.html, ...)
- * ----------------------------------------------------------- */
-
-// [development build]
-function html() {
-  return (
-    gulp
-      .src(
-        paths.html.src,
-        // filter out unchanged files between runs
-        { since: gulp.lastRun(html) }
+      // save non-minified copies with debug duffix
+      .pipe(rename({ suffix: '-dbg' }))
+      .pipe(gulp.dest(DIST))
+      // process copies without suffix
+      .pipe(
+        rename(oFile => {
+          oFile.basename = oFile.basename.replace(/-dbg$/, '')
+          return oFile
+        })
       )
-      // don't exit the running watcher task on errors
-      .pipe(plumber())
-      .pipe(gulp.dest(paths.html.dest.dev))
+      // minify scripts
+      .pipe(uglify())
+      .pipe(gulp.dest(DIST))
   )
-}
-
-// [production build]
-function htmlDist() {
-  return gulp
-    .src(paths.html.src)
-    .pipe(
-      htmlmin({
-        removeComments: true,
-        collapseWhitespace: true,
-        collapseBooleanAttributes: true,
-        removeAttributeQuotes: true,
-        removeRedundantAttributes: true,
-        removeEmptyAttributes: true,
-        removeScriptTypeAttributes: true,
-        removeStyleLinkTypeAttributes: true,
-        removeOptionalTags: true
-      })
-    )
-    .pipe(gulp.dest(paths.html.dest.dist))
 }
 
 /* ----------------------------------------------------------- *
@@ -273,29 +341,83 @@ function styles() {
       )
       // don't exit the running watcher task on errors
       .pipe(plumber())
+      // compile LESS to CSS
       .pipe(
         less({
           plugins: [autoprefix]
         })
       )
-      .pipe(gulp.dest(paths.styles.dest.dev))
+      .pipe(gulp.dest(DEV))
   )
 }
 
 // [production build]
 function stylesDist() {
   const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
-  return gulp
-    .src(paths.styles.src)
-    .pipe(
-      less({
-        plugins: [autoprefix]
-      })
-    )
-    .pipe(
-      cleanCSS({
-        level: 2
-      })
-    )
-    .pipe(gulp.dest(paths.styles.dest.dist))
+  return (
+    gulp
+      .src(paths.styles.src)
+      // compile LESS to CSS
+      .pipe(
+        less({
+          plugins: [autoprefix]
+        })
+      )
+      // minify CSS
+      .pipe(
+        cleanCSS({
+          level: 2
+        })
+      )
+      .pipe(gulp.dest(DIST))
+  )
+}
+
+/* ----------------------------------------------------------- *
+ * bundle app resources in Component-preload.js file
+ * ----------------------------------------------------------- */
+
+// [production build]
+function ui5preloads() {
+  const aPreloadPromise = pkg.ui5.apps.map(oApp => {
+    const sDistAppPath = oApp.path.replace(new RegExp(`^${SRC}`), DIST)
+    return new Promise(function(resolve, reject) {
+      gulp
+        .src([
+          // bundle all app resources supported by OpenUI5
+          `${sDistAppPath}/**/*.js`,
+          `${sDistAppPath}/**/*.view.xml`,
+          `${sDistAppPath}/**/*.fragment.xml`,
+          `${sDistAppPath}/**/manifest.json`,
+          // don't bundle debug resources
+          `!${sDistAppPath}/**/*-dbg.js`
+        ])
+        .pipe(
+          ui5preload({
+            base: sDistAppPath,
+            namespace: oApp.name,
+            isLibrary: false
+          })
+        )
+        .on('error', reject)
+        .pipe(gulp.dest(sDistAppPath))
+        .on('end', resolve)
+    })
+  })
+  return Promise.all(aPreloadPromise)
+}
+
+/* ----------------------------------------------------------- *
+ * hash module paths (content based) to enable cache buster
+ * ----------------------------------------------------------- */
+
+// [production build]
+function ui5CacheBuster(done) {
+  return (
+    gulp
+      .src(paths.cacheBuster.src)
+      // rename UI5 module (app component) paths and update index.html
+      .pipe(tap(oFile => ui5Bust(oFile)))
+      .pipe(gulp.dest(DIST))
+  )
 }

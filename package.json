@@ -17,7 +17,16 @@
     "url": "https://github.com/pulseshift/openui5-gulp-starter-kit/issues"
   },
   "homepage": "https://github.com/pulseshift/openui5-gulp-starter-kit#readme",
-  "main": "src/index.html",
+  "main": "src/index.handlebars",
+  "ui5": {
+    "indexTitle": "UI5 Todo App",
+    "apps": [
+      {
+        "name": "app.todo",
+        "path": "src/openui5-todo-app"
+      }
+    ]
+  },
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-preset-env": "^1.5.2",
@@ -30,13 +39,20 @@
     "gulp-babel": "^6.1.2",
     "gulp-clean-css": "^3.4.2",
     "gulp-cli": "^1.3.0",
+    "gulp-handlebars-html": "^0.0.2",
     "gulp-htmlmin": "^3.0.0",
     "gulp-if": "^2.0.2",
     "gulp-imagemin": "^3.3.0",
     "gulp-less": "^3.3.2",
     "gulp-plumber": "^1.1.0",
+    "gulp-pretty-data": "^0.2.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-tap": "^1.0.1",
     "gulp-uglify": "^3.0.0",
+    "gulp-ui5-preload": "^1.3.1",
     "gulp-util": "^3.0.8",
-    "less-plugin-autoprefix": "^1.5.1"
+    "handlebars": "^4.0.10",
+    "less-plugin-autoprefix": "^1.5.1",
+    "loader-utils": "^1.1.0"
   }
 }
