@@ -28,6 +28,7 @@ import less from 'gulp-less'
 import tap from 'gulp-tap'
 import ui5preload from 'gulp-ui5-preload'
 import ui5Bust from './scripts/ui5-cache-buster'
+// import ui5LibUtil from './scripts/ui5-lib-util'
 import LessAutoprefix from 'less-plugin-autoprefix'
 import del from 'del'
 import path from 'path'
@@ -84,7 +85,7 @@ const paths = {
  * @public
  */
 const start = gulp.series(
-  clean,
+  gulp.parallel(loadOpenUI5, clean),
   gulp.parallel(entry, assets, scripts, styles),
   watch
 )
@@ -96,7 +97,7 @@ export default start
  * @public
  */
 const build = gulp.series(
-  cleanDist,
+  gulp.parallel(loadOpenUI5, cleanDist),
   gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
   ui5preloads,
   ui5CacheBuster
@@ -139,6 +140,15 @@ function watch() {
 // [development build]
 function reload(done) {
   server.reload()
+  done()
+}
+
+/* ----------------------------------------------------------- *
+ * if required: download and build OpenUI5 library from GitHub
+ * ----------------------------------------------------------- */
+
+// [development & production build]
+function loadOpenUI5(done) {
   done()
 }
 
