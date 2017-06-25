@@ -114,9 +114,9 @@ function watch() {
     '(Server started, use Ctrl+C to stop and go back to the console...)'
 
   // start watchers
+  gulp.watch(paths.entry.src, gulp.series(entry, reload))
   gulp.watch(paths.assets.src, gulp.series(assets, reload))
   gulp.watch(paths.scripts.src, gulp.series(scripts, reload))
-  gulp.watch(paths.html.src, gulp.series(html, reload))
   gulp.watch(paths.styles.src, gulp.series(styles, reload))
 
   // start HTTP server
