@@ -61,12 +61,17 @@ export default function ui5Bust(oHTMLFile) {
     )
 
     // generate hash based on resource contents of the app
-    const sNewHash = loaderUtils.getHashDigest(
-      Buffer.concat([new Buffer(oFileContent)]),
-      HASH_TYPE,
-      DIGEST_TYPE,
-      MAX_LENGTH
-    )
+    const sNewHash = loaderUtils
+      .getHashDigest(
+        Buffer.concat([new Buffer(oFileContent)]),
+        HASH_TYPE,
+        DIGEST_TYPE,
+        MAX_LENGTH
+      )
+      // The path part is or is not case sensitive, depending on the server environment and server.
+      // Typically Windows machines are case insensitive, while Linux machines are case sensitive.
+      // To be on the safe side, we only will use lower case paths.
+      .toLowerCase()
 
     // compose new app path
     const aPathChain = sAppPath.split('/')
