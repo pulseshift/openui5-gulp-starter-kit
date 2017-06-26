@@ -23,7 +23,7 @@
   "main": "src/index.handlebars",
   "ui5": {
     "indexTitle": "UI5 Todo App",
-    "src": "local",
+    "src": "cdn",
     "srcLinks": {
       "github": {
         "url": "https://github.com/SAP/openui5/archive/1.48.2.zip",
