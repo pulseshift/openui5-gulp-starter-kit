@@ -28,10 +28,11 @@ import less from 'gulp-less'
 import tap from 'gulp-tap'
 import ui5preload from 'gulp-ui5-preload'
 import ui5Bust from './modules/ui5-cache-buster'
-// import ui5LibUtil from './modules/ui5-lib-util'
+import ui5LibUtil from './modules/ui5-lib-util'
 import LessAutoprefix from 'less-plugin-autoprefix'
 import del from 'del'
 import path from 'path'
+import fs from 'fs'
 import server from 'browser-sync'
 import handlebars from 'handlebars'
 import gulpHandlebars from 'gulp-handlebars-html'
@@ -50,7 +51,7 @@ handlebars.registerHelper('secure', function(str) {
 // path to source directory
 const SRC = 'src'
 // path to development directory
-const DEV = 'dev'
+const DEV = '.tmp'
 // path to ditribution direcory
 const DIST = 'dist'
 
@@ -85,7 +86,7 @@ const paths = {
  * @public
  */
 const start = gulp.series(
-  gulp.parallel(loadOpenUI5, clean),
+  gulp.parallel(/* loadOpenUI5, */ clean),
   gulp.parallel(entry, assets, scripts, styles),
   watch
 )
@@ -97,7 +98,7 @@ export default start
  * @public
  */
 const build = gulp.series(
-  gulp.parallel(loadOpenUI5, cleanDist),
+  gulp.parallel(/* loadOpenUI5, */ cleanDist),
   gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
   ui5preloads,
   ui5CacheBuster
@@ -144,12 +145,37 @@ function reload(done) {
 }
 
 /* ----------------------------------------------------------- *
- * if required: download and build OpenUI5 library from GitHub
+ * if required: download and build OpenUI5 library
  * ----------------------------------------------------------- */
 
 // [development & production build]
-function loadOpenUI5(done) {
-  done()
+function loadOpenUI5() {
+  const sSourceID = pkg.ui5.src
+  const oSource = pkg.ui5.srcLinks[sSourceID]
+  const isRemoteLink = oSource.url.startsWith('http')
+  const sUI5Version = oSource.version
+
+  const sDownloadPath = 'download'
+  const sUI5TargetPath = `ui5/${sUI5Version}`
+
+  // define download promise
+  const checkDownload = oSource.isArchive &&
+    isRemoteLink &&
+    !fs.existsSync(sUI5TargetPath)
+    ? downloadUI5(oSource.url, sDownloadPath, sUI5Version)
+    : Promise.resolve()
+
+  // define build Promise
+  const checkBuild = oSource.isPrebuild === false
+    ? buildUI5(
+        `${sDownloadPath}/download-${sUI5Version}`,
+        sUI5TargetPath,
+        sUI5Version
+      )
+    : Promise.resolve()
+
+  // return promise
+  return checkDownload.then(() => checkBuild).then(() => del(sDownloadPath))
 }
 
 /* ----------------------------------------------------------- *
@@ -174,6 +200,7 @@ function cleanDist() {
 function getHandlebarsProps() {
   return {
     indexTitle: pkg.ui5.indexTitle,
+    src: getRelativeUI5SrcURL(),
     // create resource roots string
     resourceroots: JSON.stringify(
       pkg.ui5.apps.reduce(
@@ -185,6 +212,36 @@ function getHandlebarsProps() {
       )
     )
   }
+}
+
+// [helper function]
+function getRelativeUI5SrcURL() {
+  const sEntryHTMLPath = pkg.main
+  const sSourceID = pkg.ui5.src
+  const oSource = pkg.ui5.srcLinks[sSourceID]
+  const isRemoteLink = oSource.url.startsWith('http')
+
+  let sOpenUI5Path = ''
+  let sRelativeUI5Path = ''
+
+  if (oSource.isArchive && isRemoteLink && oSource.isPrebuild) {
+    // ui5/version/sap-ui-core.js
+    sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`
+    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
+  } else if (oSource.isArchive && isRemoteLink && !oSource.isPrebuild) {
+    // ui5/version/sap-ui-core.js
+    sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`
+    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
+  } else if (!oSource.isArchive && isRemoteLink) {
+    // direct link
+    sRelativeUI5Path = oSource.url
+  } else if (!isRemoteLink) {
+    // direct link
+    sOpenUI5Path = oSource.url
+    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
+  }
+
+  return sRelativeUI5Path
 }
 
 // [development build]

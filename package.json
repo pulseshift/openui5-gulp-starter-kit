@@ -11,7 +11,10 @@
     "url": "git+https://github.com/pulseshift/openui5-gulp-starter-kit.git",
     "type": "git"
   },
-  "author": "Jascha Quintern <jascha.quintern@pulseshift.com>",
+  "authors": [
+    "Jascha Quintern <jascha.quintern@pulseshift.com>",
+    "Michael Dell <michael.dell@pulseshift.com>"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/pulseshift/openui5-gulp-starter-kit/issues"
@@ -20,6 +23,33 @@
   "main": "src/index.handlebars",
   "ui5": {
     "indexTitle": "UI5 Todo App",
+    "src": "local",
+    "srcLinks": {
+      "github": {
+        "url": "https://github.com/SAP/openui5/archive/1.48.2.zip",
+        "version": "1.48.2",
+        "isPrebuild": false,
+        "isArchive": true
+      },
+      "cdnDownload": {
+        "url": "https://openui5beta.hana.ondemand.com/downloads/openui5-sdk-1.48.2.zip",
+        "version": "1.48.2",
+        "isPrebuild": true,
+        "isArchive": true
+      },
+      "cdn": {
+        "url": "https://openui5.hana.ondemand.com/1.48.2/resources/sap-ui-core.js",
+        "version": "1.48.2",
+        "isPrebuild": true,
+        "isArchive": false
+      },
+      "local": {
+        "url": "ui5/your-local-build/sap-ui-core.js",
+        "version": "1.48.2",
+        "isPrebuild": true,
+        "isArchive": false
+      }
+    },
     "apps": [
       {
         "name": "app.todo",
@@ -39,6 +69,7 @@
     "gulp-babel": "^6.1.2",
     "gulp-clean-css": "^3.4.2",
     "gulp-cli": "^1.3.0",
+    "gulp-download": "^0.0.1",
     "gulp-handlebars-html": "^0.0.2",
     "gulp-htmlmin": "^3.0.0",
     "gulp-if": "^2.0.2",
@@ -50,8 +81,11 @@
     "gulp-tap": "^1.0.1",
     "gulp-uglify": "^3.0.0",
     "gulp-ui5-preload": "^1.3.1",
+    "gulp-unzip": "^0.2.0",
     "gulp-util": "^3.0.8",
     "handlebars": "^4.0.10",
+    "less": "^2.7.2",
+    "less-openui5": "^0.3.1",
     "less-plugin-autoprefix": "^1.5.1",
     "loader-utils": "^1.1.0"
   }

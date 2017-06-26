@@ -2,8 +2,9 @@
 *.DS_Store
 
 ### Build Process ###
-/dev/
+/.tmp/
 /dist/
+/ui5/
 
 ### Node ###
 node_modules/
