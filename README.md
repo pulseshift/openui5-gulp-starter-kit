@@ -2,7 +2,7 @@
 [![Github All Releases](https://img.shields.io/github/downloads/pulseshift/openui5-gulp-starter-kit/total.svg)]()
 [![styled with prettier](https://img.shields.io/badge/styled_with-prettier-ff69b4.svg)](#badge)
 
-![OpenUI5 Starter Kit](UI5STarterKit.png)
+![OpenUI5 Starter Kit](https://github.com/pulseshift/openui5-gulp-starter-kit/raw/master/UI5StarterKit.png)
 
 ## Overview
 
