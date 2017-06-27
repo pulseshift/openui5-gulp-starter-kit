@@ -2,7 +2,7 @@
     "_version": "1.2.0",
     "sap.app": {
         "_version": "1.2.0",
-        "id": "ps",
+        "id": "app.todo",
         "type": "application",
         "i18n": "i18n/i18n.properties",
         "applicationVersion": {
@@ -14,14 +14,6 @@
     "sap.ui": {
         "_version": "1.2.0",
         "technology": "UI5",
-        "icons": {
-            "icon": "",
-            "favIcon": "",
-            "phone": "",
-            "phone@2": "",
-            "tablet": "",
-            "tablet@2": ""
-        },
         "deviceTypes": {
             "desktop": true,
             "tablet": true,
@@ -47,7 +39,7 @@
             "i18n": {
                 "type": "sap.ui.model.resource.ResourceModel",
                 "settings": {
-                    "bundleName": "ps.i18n.i18n"
+                    "bundleName": "app.todo.i18n.i18n"
                 }
             }
         },
@@ -56,12 +48,12 @@
                 "uri": "css/style.css"
             }]
         },
-        "rootView": "ps.views.App.index",
+        "rootView": "app.todo.view.App",
         "routing": {
             "config": {
                 "routerClass": "sap.m.routing.Router",
                 "viewType": "XML",
-                "viewPath": "ps.views",
+                "viewPath": "app.todo.view",
                 "controlId": "app",
                 "controlAggregation": "pages",
                 "transition": "slide",
@@ -74,20 +66,20 @@
                 "main": {
                     "viewType": "XML",
                     "transition": "slide",
-                    "viewName": "Main.index",
+                    "viewName": "Main",
                     "viewLevel": 1
                 },
                 "detail": {
                     "viewType": "XML",
                     "transition": "slide",
-                    "viewName": "Detail.index",
-                    "viewLevel": 1
+                    "viewName": "Detail",
+                    "viewLevel": 2
                 },
                 "notFound": {
                     "viewType": "XML",
                     "transition": "slide",
-                    "viewName": "NotFound.index",
-                    "viewLevel": 2
+                    "viewName": "NotFound",
+                    "viewLevel": 3
                 }
             },
             "routes": [{
@@ -95,8 +87,8 @@
                 "pattern": "",
                 "target": ["main"]
             }, {
-                "name": "main",
-                "pattern": "/main",
+                "name": "todo",
+                "pattern": "/todo",
                 "target": ["main"]
             }, {
                 "name": "detail",

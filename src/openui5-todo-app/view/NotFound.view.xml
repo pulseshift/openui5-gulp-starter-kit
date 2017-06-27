@@ -1,5 +1,5 @@
 <mvc:View
-  controllerName="ps.views.NotFound.index"
+  controllerName="app.todo.controller.NotFound"
   xmlns:html="http://www.w3.org/1999/xhtml"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m">

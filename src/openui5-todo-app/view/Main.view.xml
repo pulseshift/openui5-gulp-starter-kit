@@ -1,5 +1,5 @@
 <mvc:View
-  controllerName="ps.views.Main.index"
+  controllerName="app.todo.controller.Main"
   xmlns:html="http://www.w3.org/1999/xhtml"
   xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m">
   <Page
@@ -7,10 +7,8 @@
     title="{i18n>title}"
     enableScrolling="false">
     <content>
-      <!-- <Label text="Hallo"/> -->
-      <Button
-        text="{/main/counter}"
-        press="onDispatchAction" />
+      <Text
+        text="Hallo" />
     </content>
   </Page>
 </mvc:View>

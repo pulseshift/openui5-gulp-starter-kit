@@ -10,28 +10,32 @@
     <script id="sap-ui-bootstrap"
       src="{{secure src}}"
       data-sap-ui-libs="sap.m"
-      data-sap-ui-theme="sap_bluecrystal"
+      data-sap-ui-theme="sap_belize"
+      data-sap-ui-frameOptions="deny"
       data-sap-ui-compatVersion="edge"
+      data-sap-ui-bindingSyntax="complex"
       data-sap-ui-preload="async"
       data-sap-ui-resourceroots='{{secure resourceroots}}'>
     </script>
 
     <script>
-    sap.ui.getCore().attachInit(function() {
-  new sap.m.Shell({
-    backgroundColor: '',
-    backgroundImage: '',
-    backgroundRepeat: false,
-    backgroundOpacity: 1,
-    appWidthLimited: true,
-    app: new sap.ui.core.ComponentContainer({
-      height: '100%',
-      width: '100%',
-      name: 'ps'
-    })
-  }).placeAt('content')
-})
-</script>
+      sap.ui.getCore().attachInit(function() {
+        // init component container
+        var oComponentContainer = new sap.ui.core.ComponentContainer({
+          height: '100%'
+        }).placeAt('content');
+
+        // init app component and load asynchroneously
+        sap.ui.component({
+          name: 'app.todo',
+          manifestFirst: true,
+          async: true
+        })
+        .then(function(oComponent) {
+          oComponentContainer.setComponent(oComponent)
+        });
+      });
+    </script>
   </head>
 
   <body class="sapUiBody" id="content">
