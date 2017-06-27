@@ -12,48 +12,48 @@
  *
  */
 
-import pkg from './package.json'
-import gulp from 'gulp'
-import gutil from 'gulp-util'
-import gulpif from 'gulp-if'
-import rename from 'gulp-rename'
-import plumber from 'gulp-plumber'
-import babel from 'gulp-babel'
-import uglify from 'gulp-uglify'
-import htmlmin from 'gulp-htmlmin'
-import prettydata from 'gulp-pretty-data'
-import imagemin from 'gulp-imagemin'
-import cleanCSS from 'gulp-clean-css'
-import less from 'gulp-less'
-import tap from 'gulp-tap'
-import ui5preload from 'gulp-ui5-preload'
-import ui5Bust from './modules/ui5-cache-buster'
-import ui5LibUtil from './modules/ui5-lib-util'
-import LessAutoprefix from 'less-plugin-autoprefix'
-import del from 'del'
-import path from 'path'
-import fs from 'fs'
-import server from 'browser-sync'
-import handlebars from 'handlebars'
-import gulpHandlebars from 'gulp-handlebars-html'
+import pkg from "./package.json";
+import gulp from "gulp";
+import gutil from "gulp-util";
+import gulpif from "gulp-if";
+import rename from "gulp-rename";
+import plumber from "gulp-plumber";
+import babel from "gulp-babel";
+import uglify from "gulp-uglify";
+import htmlmin from "gulp-htmlmin";
+import prettydata from "gulp-pretty-data";
+import imagemin from "gulp-imagemin";
+import cleanCSS from "gulp-clean-css";
+import less from "gulp-less";
+import tap from "gulp-tap";
+import ui5preload from "gulp-ui5-preload";
+import ui5Bust from "./modules/ui5-cache-buster";
+import { downloadUI5, buildUI5 } from "./modules/ui5-lib-util";
+import LessAutoprefix from "less-plugin-autoprefix";
+import del from "del";
+import path from "path";
+import fs from "fs";
+import server from "browser-sync";
+import handlebars from "handlebars";
+import gulpHandlebars from "gulp-handlebars-html";
 
-const hdlbars = gulpHandlebars(handlebars)
+const hdlbars = gulpHandlebars(handlebars);
 
 // register handlebars helper function
-handlebars.registerHelper('secure', function(str) {
-  return new handlebars.SafeString(str)
-})
+handlebars.registerHelper("secure", function(str) {
+  return new handlebars.SafeString(str);
+});
 
 /*
  * CONFIGURATION
  */
 
 // path to source directory
-const SRC = 'src'
+const SRC = "src";
 // path to development directory
-const DEV = '.tmp'
+const DEV = ".tmp";
 // path to ditribution direcory
-const DIST = 'dist'
+const DIST = "dist";
 
 // paths used in our app
 const paths = {
@@ -78,7 +78,7 @@ const paths = {
     // this should be the result file of task 'entryDist'
     src: [`${DIST}/index.html`]
   }
-}
+};
 
 /**
  * Gulp 'start' task (development mode).
@@ -86,11 +86,11 @@ const paths = {
  * @public
  */
 const start = gulp.series(
-  gulp.parallel(/* loadOpenUI5, */ clean),
+  gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), clean),
   gulp.parallel(entry, assets, scripts, styles),
   watch
-)
-export default start
+);
+export default start;
 
 /**
  * Gulp 'build' task (distribution mode).
@@ -98,12 +98,12 @@ export default start
  * @public
  */
 const build = gulp.series(
-  gulp.parallel(/* loadOpenUI5, */ cleanDist),
+  gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), cleanDist),
   gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
   ui5preloads,
   ui5CacheBuster
-)
-export { build }
+);
+export { build };
 
 /* ----------------------------------------------------------- *
  * watch files for changes
@@ -112,26 +112,29 @@ export { build }
 // [development build]
 function watch() {
   const sSuccessMessage =
-    '(Server started, use Ctrl+C to stop and go back to the console...)'
+    "\u{1F64C}  (Server started, use Ctrl+C to stop and go back to the console...)";
 
   // start watchers
-  gulp.watch(paths.entry.src, gulp.series(entry, reload))
-  gulp.watch(paths.assets.src, gulp.series(assets, reload))
-  gulp.watch(paths.scripts.src, gulp.series(scripts, reload))
-  gulp.watch(paths.styles.src, gulp.series(styles, reload))
+  gulp.watch(paths.entry.src, gulp.series(entry, reload));
+  gulp.watch(paths.assets.src, gulp.series(assets, reload));
+  gulp.watch(paths.scripts.src, gulp.series(scripts, reload));
+  gulp.watch(paths.styles.src, gulp.series(styles, reload));
 
   // start HTTP server
   server.init({
     // learn more about the powerful options (proxy, middleware, etc.) here:
     // https://www.browsersync.io/docs/options
     server: {
-      baseDir: `./${DEV}`
+      baseDir: `./${DEV}`,
+      routes: {
+        "/ui5": "./ui5"
+      }
     }
     // proxy: 'yourlocal.dev'
-  })
+  });
 
   // log success message
-  gutil.log(gutil.colors.green(sSuccessMessage))
+  gutil.log(gutil.colors.green(sSuccessMessage));
 }
 
 /* ----------------------------------------------------------- *
@@ -140,8 +143,8 @@ function watch() {
 
 // [development build]
 function reload(done) {
-  server.reload()
-  done()
+  server.reload();
+  done();
 }
 
 /* ----------------------------------------------------------- *
@@ -149,33 +152,39 @@ function reload(done) {
  * ----------------------------------------------------------- */
 
 // [development & production build]
-function loadOpenUI5() {
-  const sSourceID = pkg.ui5.src
-  const oSource = pkg.ui5.srcLinks[sSourceID]
-  const isRemoteLink = oSource.url.startsWith('http')
-  const sUI5Version = oSource.version
+export function downloadOpenUI5() {
+  const sSourceID = pkg.ui5.src;
+  const oSource = pkg.ui5.srcLinks[sSourceID];
+  const isRemoteLink = oSource.url.startsWith("http");
+  const sUI5Version = oSource.version;
 
-  const sDownloadPath = 'download'
-  const sUI5TargetPath = `ui5/${sUI5Version}`
+  const sDownloadPath = path.resolve(__dirname, "./download");
+  const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`);
 
-  // define download promise
-  const checkDownload = oSource.isArchive &&
-    isRemoteLink &&
-    !fs.existsSync(sUI5TargetPath)
+  // return promise
+  return oSource.isArchive && isRemoteLink && !fs.existsSync(sUI5TargetPath)
     ? downloadUI5(oSource.url, sDownloadPath, sUI5Version)
-    : Promise.resolve()
+    : Promise.resolve();
+}
+
+// [development & production build]
+export function buildOpenUI5() {
+  const sSourceID = pkg.ui5.src;
+  const oSource = pkg.ui5.srcLinks[sSourceID];
+  const isRemoteLink = oSource.url.startsWith("http");
+  const sUI5Version = oSource.version;
+
+  const sDownloadPath = path.resolve(__dirname, "./download");
+  const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`);
 
   // define build Promise
-  const checkBuild = oSource.isPrebuild === false
+  return oSource.isPrebuild === false
     ? buildUI5(
         `${sDownloadPath}/download-${sUI5Version}`,
         sUI5TargetPath,
         sUI5Version
       )
-    : Promise.resolve()
-
-  // return promise
-  return checkDownload.then(() => checkBuild).then(() => del(sDownloadPath))
+    : Promise.resolve();
 }
 
 /* ----------------------------------------------------------- *
@@ -184,12 +193,12 @@ function loadOpenUI5() {
 
 // [development build]
 function clean() {
-  return del(`${DEV}/**/*`)
+  return del(`${DEV}/**/*`);
 }
 
 // [production build]
 function cleanDist() {
-  return del(`${DIST}/**/*`)
+  return del(`${DIST}/**/*`);
 }
 
 /* ----------------------------------------------------------- *
@@ -211,37 +220,46 @@ function getHandlebarsProps() {
         {}
       )
     )
-  }
+  };
 }
 
 // [helper function]
 function getRelativeUI5SrcURL() {
-  const sEntryHTMLPath = pkg.main
-  const sSourceID = pkg.ui5.src
-  const oSource = pkg.ui5.srcLinks[sSourceID]
-  const isRemoteLink = oSource.url.startsWith('http')
+  const sEntryHTMLPath = pkg.main;
+  const sSourceID = pkg.ui5.src;
+  const oSource = pkg.ui5.srcLinks[sSourceID];
+  const isRemoteLink = oSource.url.startsWith("http");
 
-  let sOpenUI5Path = ''
-  let sRelativeUI5Path = ''
+  let sOpenUI5Path = "";
+  let sRelativeUI5Path = "";
 
   if (oSource.isArchive && isRemoteLink && oSource.isPrebuild) {
     // ui5/version/sap-ui-core.js
-    sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`
-    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
+    sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`;
+    sRelativeUI5Path = path.relative(
+      path.dirname(sEntryHTMLPath),
+      sOpenUI5Path
+    );
   } else if (oSource.isArchive && isRemoteLink && !oSource.isPrebuild) {
     // ui5/version/sap-ui-core.js
-    sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`
-    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
+    sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`;
+    sRelativeUI5Path = path.relative(
+      path.dirname(sEntryHTMLPath),
+      sOpenUI5Path
+    );
   } else if (!oSource.isArchive && isRemoteLink) {
     // direct link
-    sRelativeUI5Path = oSource.url
+    sRelativeUI5Path = oSource.url;
   } else if (!isRemoteLink) {
     // direct link
-    sOpenUI5Path = oSource.url
-    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
+    sOpenUI5Path = oSource.url;
+    sRelativeUI5Path = path.relative(
+      path.dirname(sEntryHTMLPath),
+      sOpenUI5Path
+    );
   }
 
-  return sRelativeUI5Path
+  return sRelativeUI5Path;
 }
 
 // [development build]
@@ -257,9 +275,9 @@ function entry() {
       .pipe(plumber())
       // compile handlebars to HTML
       .pipe(hdlbars(getHandlebarsProps()))
-      .pipe(rename({ extname: '.html' }))
+      .pipe(rename({ extname: ".html" }))
       .pipe(gulp.dest(DEV))
-  )
+  );
 }
 
 // [production build]
@@ -283,9 +301,9 @@ function entryDist() {
           removeOptionalTags: true
         })
       )
-      .pipe(rename({ extname: '.html' }))
+      .pipe(rename({ extname: ".html" }))
       .pipe(gulp.dest(DIST))
-  )
+  );
 }
 
 /* ----------------------------------------------------------- *
@@ -314,7 +332,7 @@ function assets() {
         )
       )
       .pipe(gulp.dest(DEV))
-  )
+  );
 }
 
 // [production build]
@@ -337,15 +355,15 @@ function assetsDist() {
         gulpif(
           /.*\.(xml|json|svg)$/,
           prettydata({
-            type: 'minify',
+            type: "minify",
             extensions: {
-              svg: 'xml'
+              svg: "xml"
             }
           })
         )
       )
       .pipe(gulp.dest(DIST))
-  )
+  );
 }
 
 /* ----------------------------------------------------------- *
@@ -366,7 +384,7 @@ function scripts() {
       // babel will run with the settings defined in `.babelrc` file
       .pipe(babel())
       .pipe(gulp.dest(DEV))
-  )
+  );
 }
 
 // [production build]
@@ -377,19 +395,19 @@ function scriptsDist() {
       // babel will run with the settings defined in `.babelrc` file
       .pipe(babel())
       // save non-minified copies with debug duffix
-      .pipe(rename({ suffix: '-dbg' }))
+      .pipe(rename({ suffix: "-dbg" }))
       .pipe(gulp.dest(DIST))
       // process copies without suffix
       .pipe(
         rename(oFile => {
-          oFile.basename = oFile.basename.replace(/-dbg$/, '')
-          return oFile
+          oFile.basename = oFile.basename.replace(/-dbg$/, "");
+          return oFile;
         })
       )
       // minify scripts
       .pipe(uglify())
       .pipe(gulp.dest(DIST))
-  )
+  );
 }
 
 /* ----------------------------------------------------------- *
@@ -398,7 +416,7 @@ function scriptsDist() {
 
 // [development build]
 function styles() {
-  const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
+  const autoprefix = new LessAutoprefix({ browsers: ["last 2 versions"] });
   return (
     gulp
       .src(
@@ -415,12 +433,12 @@ function styles() {
         })
       )
       .pipe(gulp.dest(DEV))
-  )
+  );
 }
 
 // [production build]
 function stylesDist() {
-  const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
+  const autoprefix = new LessAutoprefix({ browsers: ["last 2 versions"] });
   return (
     gulp
       .src(paths.styles.src)
@@ -437,7 +455,7 @@ function stylesDist() {
         })
       )
       .pipe(gulp.dest(DIST))
-  )
+  );
 }
 
 /* ----------------------------------------------------------- *
@@ -447,7 +465,7 @@ function stylesDist() {
 // [production build]
 function ui5preloads() {
   const aPreloadPromise = pkg.ui5.apps.map(oApp => {
-    const sDistAppPath = oApp.path.replace(new RegExp(`^${SRC}`), DIST)
+    const sDistAppPath = oApp.path.replace(new RegExp(`^${SRC}`), DIST);
     return new Promise(function(resolve, reject) {
       gulp
         .src([
@@ -466,12 +484,12 @@ function ui5preloads() {
             isLibrary: false
           })
         )
-        .on('error', reject)
+        .on("error", reject)
         .pipe(gulp.dest(sDistAppPath))
-        .on('end', resolve)
-    })
-  })
-  return Promise.all(aPreloadPromise)
+        .on("end", resolve);
+    });
+  });
+  return Promise.all(aPreloadPromise);
 }
 
 /* ----------------------------------------------------------- *
@@ -486,5 +504,5 @@ function ui5CacheBuster(done) {
       // rename UI5 module (app component) paths and update index.html
       .pipe(tap(oFile => ui5Bust(oFile)))
       .pipe(gulp.dest(DIST))
-  )
+  );
 }
