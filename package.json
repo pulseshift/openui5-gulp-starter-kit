@@ -1,6 +1,6 @@
 {
   "name": "openui5-gulp-starter-kit",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "OpenUI5 template app build with gulp.",
   "scripts": {
     "start": "gulp",
