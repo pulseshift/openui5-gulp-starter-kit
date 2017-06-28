@@ -1,3 +1,3 @@
 sap.ui.define(['app/todo/controller/BaseController'], function(BaseController) {
-  return BaseController.extend('app.todo.controller.App', {});
+  return BaseController.extend('app.todo.controller.App', {})
 })
