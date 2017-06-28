@@ -8,11 +8,7 @@
     "precommit": "lint-staged"
   },
   "lint-staged": {
-    "src/*.js": [
-      "prettier --write --no-semi --single-quote",
-      "git add"
-    ],
-    "modules/*.js": [
+    "*.js": [
       "prettier --write --no-semi --single-quote",
       "git add"
     ]
