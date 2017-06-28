@@ -130,9 +130,9 @@ function watch() {
       routes: {
         '/ui5': './ui5'
       }
-    },
+    }
     // open the site in chrome canary only
-    browser: ['google chrome canary']
+    // browser: ['google chrome canary']
     // proxy: 'yourlocal.dev'
   })
 
