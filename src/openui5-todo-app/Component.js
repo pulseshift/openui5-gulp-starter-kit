@@ -17,14 +17,14 @@ sap.ui.define(['sap/ui/core/UIComponent', 'app/todo/model/models'], function(
       // call the base component's init function
       UIComponent.prototype.init.apply(this, arguments)
 
-      // create the views based on the url/hash
-      this.getRouter().initialize()
-
       // set the device model
       this.setModel(models.createDeviceModel(), 'device')
 
       // set the todo model
       this.setModel(models.createTodoModel(), 'todo')
+
+      // create the views based on the url/hash
+      this.getRouter().initialize()
     }
   })
 })

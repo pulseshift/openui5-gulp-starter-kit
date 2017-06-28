@@ -429,7 +429,7 @@ function styles() {
           plugins: [autoprefix]
         })
       )
-      .pipe(sourcemaps.write('../maps'))
+      .pipe(sourcemaps.write('../.maps'))
       .pipe(gulp.dest(DEV))
   )
 }

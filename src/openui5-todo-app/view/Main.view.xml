@@ -11,49 +11,85 @@
       <VBox
         alignItems="Center">
 
+        <!-- todo list title -->
         <Title
-          class="sapUiSmallMargin"
+          class="appTodoTitle sapUiSmallMargin"
           text="{i18n>Main.todos}"
           titleStyle="H1" />
 
-        <VBox width="550px">
+        <!-- todo list container -->
+        <VBox
+          class="appTodoListContainer"
+          width="550px">
 
-          <Toolbar design="Solid">
-            <Button icon="sap-icon://slim-arrow-down"/>
+          <!-- header toolbar (input for new todo item) -->
+          <Toolbar
+            class="appTodoListHeader"
+            design="Transparent">
+            <ToggleButton
+              class="appTodoToggleListCompletion"
+              type="Transparent"
+              icon="sap-icon://slim-arrow-down"
+              press="onPressCompleteAllTodos"/>
             <Input
+              class="appTodoItemInput"
               value="{view>/Main/newTodoItemName}"
-              placeholder="What needs to be done?"
+              placeholder="{i18n>Main.newItemPlaceholder}"
               width="100%"
               submit="onAddNewItem" />
           </Toolbar>
 
+          <!-- todo items -->
           <List
+            class="appTodoListMain"
             mode="Delete"
             delete="onDeleteTodo"
             items="{todo>/items}">
-            <CustomListItem>
+            <CustomListItem
+              class="appTodoListItem"
+              visible="{=
+                ${view>/Main/selectedFilter} === 'all' ||
+                ${view>/Main/selectedFilter} === 'active' &amp;&amp; !${todo>isCompleted} ||
+                ${view>/Main/selectedFilter} === 'completed' &amp;&amp; ${todo>isCompleted}
+              }">
               <HBox alignItems="Center">
-                <CheckBox selected="{todo>isCompleted}"/>
+                <CheckBox
+                  class="appTodoCheckBox"
+                  selected="{todo>isCompleted}"
+                  select="onTogglTodoListCompletion" />
                 <Input
+                  class="appTodoItemInput"
                   value="{todo>name}"
-                  width="450px" />
+                  width="450px"
+                  enabled="{= !${todo>isCompleted} }" />
               </HBox>
             </CustomListItem>
           </List>
 
-          <Toolbar design="Solid">
-            <Label text="{= ${todo>/items}.length } items left" />
+          <!-- footer toolbar -->
+          <Toolbar
+            class="appTodoListFooter"
+            design="Transparent">
+            <Label
+              class="appTodoFooterText"
+              text="{view>/Main/itemsLeft} {i18n>Main.itemsLeft}" />
             <ToolbarSpacer />
             <SegmentedButton
+              class="appTodoSegmentedFilterButton sapUiSizeCompact"
               selectedKey="{view>/Main/selectedFilter}">
               <items>
-                <SegmentedButtonItem text="All" key="all" />
-                <SegmentedButtonItem text="Active" key="active" />
-                <SegmentedButtonItem text="Completed" key="completed" />
+                <SegmentedButtonItem text="{i18n>Main.filterAll}" key="all" />
+                <SegmentedButtonItem text="{i18n>Main.filterActive}" key="active" />
+                <SegmentedButtonItem text="{i18n>Main.filterCompleted}" key="completed" />
               </items>
             </SegmentedButton>
             <ToolbarSpacer/>
-            <Button text="Clear completed"/>
+            <Button
+              class="appTodoClearCompleted"
+              text="{i18n>Main.clearCompletedBtn}"
+              type="Transparent"
+              enabled="{= ${view>/Main/itemsLeft} &lt; ${todo>/items}.length }"
+              press="onClearCompletedTodos" />
           </Toolbar>
 
         </VBox>

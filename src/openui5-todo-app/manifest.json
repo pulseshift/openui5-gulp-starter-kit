@@ -90,10 +90,6 @@
                 "name": "todo",
                 "pattern": "/todo",
                 "target": ["main"]
-            }, {
-                "name": "detail",
-                "pattern": "/detail",
-                "target": ["detail"]
             }]
         }
     }
