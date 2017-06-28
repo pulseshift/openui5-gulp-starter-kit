@@ -1,6 +1,7 @@
-[![GitHub release](https://img.shields.io/github/release/pulseshift/openui5-gulp-starter-kit.svg)]()
-[![Github All Releases](https://img.shields.io/github/downloads/pulseshift/openui5-gulp-starter-kit/total.svg)]()
-[![styled with prettier](https://img.shields.io/badge/styled_with-prettier-ff69b4.svg)](#badge)
+[![GitHub release](https://img.shields.io/github/tag/pulseshift/openui5-gulp-starter-kit.svg?style=flat)]()
+<!-- [![Github All Releases](https://img.shields.io/github/downloads/pulseshift/openui5-gulp-starter-kit/total.svg?style=flat)]() -->
+[![styled with prettier](https://img.shields.io/badge/styled_with-prettier-ff69b4.svg?style=flat)](#badge)
+[![made with love](https://img.shields.io/badge/made%20with%20love-❤-FF1744.svg?style=flat)]()
 
 ![OpenUI5 Starter Kit](https://github.com/pulseshift/openui5-gulp-starter-kit/raw/master/UI5StarterKit.png)
 
@@ -25,7 +26,7 @@ _Will build all resources start watcher task and start a HTTP server_
 ```
 $ yarn build
 ```
-App should open in your browser automatically `http://localhost:3001`
+App should open in your browser automatically: `http://localhost:3001`
 
 
 
