@@ -26,6 +26,7 @@ import imagemin from 'gulp-imagemin'
 import cleanCSS from 'gulp-clean-css'
 import less from 'gulp-less'
 import tap from 'gulp-tap'
+import sourcemaps from 'gulp-sourcemaps'
 import ui5preload from 'gulp-ui5-preload'
 import ui5Bust from './modules/ui5-cache-buster'
 import { downloadUI5, buildUI5 } from './modules/ui5-lib-util'
@@ -129,7 +130,9 @@ function watch() {
       routes: {
         '/ui5': './ui5'
       }
-    }
+    },
+    // open the site in chrome canary only
+    browser: ['google chrome canary']
     // proxy: 'yourlocal.dev'
   })
 
@@ -372,8 +375,10 @@ function scripts() {
       )
       // don't exit the running watcher task on errors
       .pipe(plumber())
+      .pipe(sourcemaps.init())
       // babel will run with the settings defined in `.babelrc` file
       .pipe(babel())
+      .pipe(sourcemaps.write('../.maps'))
       .pipe(gulp.dest(DEV))
   )
 }
@@ -417,12 +422,14 @@ function styles() {
       )
       // don't exit the running watcher task on errors
       .pipe(plumber())
+      .pipe(sourcemaps.init())
       // compile LESS to CSS
       .pipe(
         less({
           plugins: [autoprefix]
         })
       )
+      .pipe(sourcemaps.write('../maps'))
       .pipe(gulp.dest(DEV))
   )
 }

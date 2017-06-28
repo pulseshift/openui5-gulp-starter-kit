@@ -22,6 +22,9 @@ sap.ui.define(['sap/ui/core/UIComponent', 'app/todo/model/models'], function(
 
       // set the device model
       this.setModel(models.createDeviceModel(), 'device')
+
+      // set the todo model
+      this.setModel(models.createTodoModel(), 'todo')
     }
   })
 })

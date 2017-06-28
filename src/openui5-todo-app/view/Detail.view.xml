@@ -5,7 +5,7 @@
   xmlns="sap.m">
   <App>
     <pages>
-      <Page>
+      <Page showHeader="false">
         <content>
         </content>
       </Page>

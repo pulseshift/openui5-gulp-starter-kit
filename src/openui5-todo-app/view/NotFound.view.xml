@@ -4,7 +4,7 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m">
   <Page
-    title="{i18n>title}">
+    showHeader="false">
     <content>
       <Text
         text="Ups... nothing found"/>

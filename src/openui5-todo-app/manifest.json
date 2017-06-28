@@ -45,7 +45,7 @@
         },
         "resources": {
             "css": [{
-                "uri": "css/style.css"
+                "uri": "styles/style.css"
             }]
         },
         "rootView": "app.todo.view.App",

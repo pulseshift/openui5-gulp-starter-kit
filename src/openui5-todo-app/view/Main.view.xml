@@ -1,14 +1,63 @@
 <mvc:View
   controllerName="app.todo.controller.Main"
   xmlns:html="http://www.w3.org/1999/xhtml"
-  xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m">
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
   <Page
     class="sapUiResponsiveContentPadding"
-    title="{i18n>title}"
+    showHeader="false"
     enableScrolling="false">
     <content>
-      <Text
-        text="Hallo" />
+      <VBox
+        alignItems="Center">
+
+        <Title
+          class="sapUiSmallMargin"
+          text="{i18n>Main.todos}"
+          titleStyle="H1" />
+
+        <VBox width="550px">
+
+          <Toolbar design="Solid">
+            <Button icon="sap-icon://slim-arrow-down"/>
+            <Input
+              value="{view>/Main/newTodoItemName}"
+              placeholder="What needs to be done?"
+              width="100%"
+              submit="onAddNewItem" />
+          </Toolbar>
+
+          <List
+            mode="Delete"
+            delete="onDeleteTodo"
+            items="{todo>/items}">
+            <CustomListItem>
+              <HBox alignItems="Center">
+                <CheckBox selected="{todo>isCompleted}"/>
+                <Input
+                  value="{todo>name}"
+                  width="450px" />
+              </HBox>
+            </CustomListItem>
+          </List>
+
+          <Toolbar design="Solid">
+            <Label text="{= ${todo>/items}.length } items left" />
+            <ToolbarSpacer />
+            <SegmentedButton
+              selectedKey="{view>/Main/selectedFilter}">
+              <items>
+                <SegmentedButtonItem text="All" key="all" />
+                <SegmentedButtonItem text="Active" key="active" />
+                <SegmentedButtonItem text="Completed" key="completed" />
+              </items>
+            </SegmentedButton>
+            <ToolbarSpacer/>
+            <Button text="Clear completed"/>
+          </Toolbar>
+
+        </VBox>
+      </VBox>
     </content>
   </Page>
 </mvc:View>

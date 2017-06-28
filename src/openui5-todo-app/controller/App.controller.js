@@ -1,3 +1,3 @@
-sap.ui.define(['sap/ui/core/mvc/Controller'], function(Controller) {
-  return Controller.extend('app.todo.controller.App', {})
+sap.ui.define(['app/todo/controller/BaseController'], function(BaseController) {
+  return BaseController.extend('app.todo.controller.App', {})
 })

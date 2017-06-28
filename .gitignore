@@ -5,6 +5,7 @@
 /.tmp/
 /dist/
 /ui5/
+/.maps/
 /download/
 
 ### Node ###
