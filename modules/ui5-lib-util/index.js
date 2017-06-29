@@ -31,11 +31,14 @@ import path from 'path'
 // export functions
 export { downloadUI5, buildUI5 }
 
-/* ----------------------------------------------------------- *
- * download OpenUI5
- * ----------------------------------------------------------- */
-
-// download OpenUI5 repository from external URL and unzip
+/**
+ * Download OpenUI5 repository from external URL and unzip.
+ *
+ * @param {sDownloadURL} [string] Download URL of required archive.
+ * @param {sDownloadPath} [string] Destination path for the download archive and extracted files.
+ * @param {sUI5Version} [string] Version number of UI5 to create at <code>sDownloadPath</code> a subdirectory named <code>/download-{{sUI5Version}}</code>.
+ * @returns {Promise} Promise without return value.
+ */
 function downloadUI5(sDownloadURL, sDownloadPath, sUI5Version) {
   // check params
   if (!sDownloadURL) {
@@ -93,11 +96,14 @@ function downloadUI5(sDownloadURL, sDownloadPath, sUI5Version) {
   return Promise.resolve()
 }
 
-/* ----------------------------------------------------------- *
- * build OpenUI5
- * ----------------------------------------------------------- */
-
-// use PulseShifts own build tools to build OpenUI5 library
+/**
+ * Use PulseShifts own build tools to build OpenUI5 library.
+ *
+ * @param {sUI5SrcPath} [string] Source path of the OpenUI5 source code..
+ * @param {sUI5TargetPath} [string] Destination path for the build library.
+ * @param {sUI5Version} [string] Version number of UI5 to create at <code>sUI5TargetPath</code> a subdirectory named <code>/{{sUI5Version}}</code>.
+ * @returns {Promise} Promise without return value.
+ */
 function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
   // check params
   if (!sUI5SrcPath) {
@@ -556,26 +562,43 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
   return oBuildPromiseChain
 }
 
-// log a gulp like 'task starting' message
+/**
+ * Log a gulp like 'task starting' message.
+ *
+ * @param {sTaskName} [string] Task name to create following result pattern <code>Starting {{sTaskName}} ...</code>.
+ * @param {aPostLogs} [Array] Additional strings pasted as parameters to <code>gulp-util.log</code>.
+ */
 function logStart(sTaskName = '', aPostLogs = []) {
   gutil.log('Starting', gutil.colors.cyan(sTaskName), '...', ...aPostLogs)
 }
 
-// log a gulp like 'task finished' message
-function logEnd(sTaskName = '', iImestampStart = Date.now(), aPostLogs = []) {
+/**
+ * Log a gulp like 'task finished' message.
+ *
+ * @param {sTaskName} [string] Task name to create following result pattern <code>Finished {{sTaskName}} after 4s</code>.
+ * @param {iTimestampStart} [number] Timestamp of task start time as UTC time in ms.
+ * @param {aPostLogs} [Array] Additional strings pasted as parameters to <code>gulp-util.log</code>.
+ */
+function logEnd(sTaskName = '', iTimestampStart = Date.now(), aPostLogs = []) {
   gutil.log(
     'Finished',
     gutil.colors.cyan(sTaskName),
     'after',
     gutil.colors.magenta(
-      `${Math.round((Date.now() - iImestampStart) / 100) / 10} s`
+      `${Math.round((Date.now() - iTimestampStart) / 100) / 10} s`
     ),
     ...aPostLogs
   )
 }
 
-// build a valid css library files
-function compileUI5LessLib(sDestDir, oData, cb) {
+/**
+ * Build a valid CSS library files.
+ *
+ * @param {sDestDir} [string] Destination directory, where to write library.css.
+ * @param {sLessFileContent} [string] Content of LESS file to be compiled in utf8 format.
+ * @param {cb} [function] Callback function to be called, when LESS compilation finished.
+ */
+function compileUI5LessLib(sDestDir, sLessFileContent, cb) {
   // options for less-openui5
   const oOptions = {
     rootPaths: [sDestDir],
@@ -585,7 +608,7 @@ function compileUI5LessLib(sDestDir, oData, cb) {
   }
 
   // execute build css build process
-  lessOpenUI5.build(oData, oOptions, (oLessError, result) => {
+  lessOpenUI5.build(sLessFileContent, oOptions, (oLessError, result) => {
     if (oLessError) {
       // build css content failed (in 99% of the cases, because of a missing .less file)
       // create empty less file and try again if build failed
@@ -606,7 +629,7 @@ function compileUI5LessLib(sDestDir, oData, cb) {
         fs.writeFile(sMissingFilePath, sNewFileContent, oWriteFileError => {
           // if missing file could be created, rebuild, again
           if (oWriteFileError === null) {
-            compileUI5LessLib(sDestDir, oData, () => cb)
+            compileUI5LessLib(sDestDir, sLessFileContent, () => cb)
             return
           }
           // if this error message raises up, the build failed due to the other 1% cases
@@ -655,7 +678,12 @@ function compileUI5LessLib(sDestDir, oData, cb) {
   })
 }
 
-// transform library-preload.json content
+/**
+ * Transform library-preload.json content.
+ *
+ * @param {oFile} [Vinyl] Vinyl file object of library-preload.json.
+ * @returns {Vinyl} Transformed library-preload.json.
+ */
 function transformPreloadJSON(oFile) {
   const oJSONRaw = oFile.contents.toString('utf8')
   const sPrelaodJSON = `jQuery.sap.registerPreloadedModules(${oJSONRaw});`
@@ -678,9 +706,14 @@ function replaceFilePlaceholders(oFile, aReplacementRules) {
   return oFile
 }
 
-// compose sap-ui-*.js files
+/**
+ * Compose sap-ui-*.js files.
+ *
+ * @param {oFile} [Vinyl] Vinyl file object sap-ui-*.js.
+ * @returns {Vinyl} Composed sap-ui-*.js file.
+ */
 function composeSAPUiCore(oFile) {
-  // parse library-preload.json
+  // parse sap-ui-*.js file
   const sRaw = oFile.contents.toString('utf8')
 
   // footer used in original OpenUI5 builds

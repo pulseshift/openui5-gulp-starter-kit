@@ -27,6 +27,7 @@ const MAX_LENGTH = 8
  * e.g.: ./webapps/my-app --> ./webapps/XDBq1b7n
  * The hash depends on:
  * ./webapps/my-app/Component-preload.js
+ * + other resources defined as dependencies in manifest.json, e.g.:
  * ./webapps/ps-sample-app/style/style.css
  *
  * The UI5 resource roots in the main HTML will be updated with the generated hashes.
@@ -55,15 +56,42 @@ export default function ui5Bust(oHTMLFile) {
     )
 
     // read relevant resources for hash generation
-    const oFileContent = fs.readFileSync(
+    const oPreloadFileContent = fs.readFileSync(
       path.resolve(sResolvedAppPath, 'Component-preload.js'),
       'utf8'
     )
 
+    // some resources will be requested additionally to 'Component-preload.js'
+    // fortunately they 'should' be listed in manifest.json, therefore, we will look them up there
+    const oManifestFileContent = fs.readFileSync(
+      path.resolve(sResolvedAppPath, 'manifest.json'),
+      'utf8'
+    )
+    const oManifestJSON = JSON.parse(oManifestFileContent)
+    const aResourceKeys = !oManifestJSON['sap.ui5'].resources
+      ? []
+      : Object.keys(oManifestJSON['sap.ui5'].resources)
+    const aDependedResourceContents = aResourceKeys.reduce(
+      (aContentsList, sResourceKey) => {
+        return aContentsList.concat(
+          oManifestJSON['sap.ui5'].resources[sResourceKey].map(oResource =>
+            fs.readFileSync(
+              path.resolve(sResolvedAppPath, oResource.uri),
+              'utf8'
+            )
+          )
+        )
+      },
+      []
+    )
+
     // generate hash based on resource contents of the app
+    const aBufferList = aDependedResourceContents
+      .concat(oPreloadFileContent)
+      .map(oContent => new Buffer(oContent))
     const sNewHash = loaderUtils
       .getHashDigest(
-        Buffer.concat([new Buffer(oFileContent)]),
+        Buffer.concat(aBufferList),
         HASH_TYPE,
         DIGEST_TYPE,
         MAX_LENGTH
