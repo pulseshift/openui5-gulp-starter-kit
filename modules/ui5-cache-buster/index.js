@@ -12,6 +12,7 @@
  *
  */
 
+import gutil from 'gulp-util'
 import loaderUtils from 'loader-utils'
 import fs from 'fs'
 import path from 'path'
@@ -133,6 +134,13 @@ export default function ui5Bust(oHTMLFile) {
     `data-sap-ui-resourceroots='${sStringifiedResourceRoots}'>`
   )
   oHTMLFile.contents = new Buffer(sNewHTMLContent)
+
+  // success message
+  gutil.log(
+    '⚡️  Successfully cache bust',
+    gutil.colors.cyan(oHTMLFile.path),
+    "(resources who have not changed, will still be fetched from the users browser's cache)"
+  )
 
   // return updated index.html again
   return oHTMLFile
