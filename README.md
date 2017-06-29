@@ -37,19 +37,27 @@ The app should open in your browser automatically, otherwise open: `http://local
 
 | Feature                                | Summary                                                                                                                                                                                                                                                     |
 |----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Embracing diverse dev environments                     | tbd                                                                                                                                              |
 | ❤ ES6/ES7 via Babel 6.0 | Compile [ES6/ES7](https://babeljs.io) into ES5 (supported by most browsers) with ease, bringing support for next generation JavaScript, today.                          |
 | Less support                           | Compile [Less](http://lesscss.org) into CSS with ease, bringing support for variables, mixins and more.                                                                                                    |
 | Consistent code formatting               | [Prettier](https://github.com/prettier/prettier) is an awesome opinionated code formatter used in many well known projects like Webpack, Babel or React. In this starter kit prettier re-formats your files that are marked as "staged" via git add before you commit. We recommend to [add also prettier as integration to your Editor](https://github.com/prettier/prettier) during development.                                                                                               |
 | Built-in HTTP Server                   | An extendable [built-in server](https://www.browsersync.io) for previewing your site locally while you develop and iterate and the option to add API endpoints via a proxy to get around Access-Control-Allow-Origin (CORS) errors.                                                                                                                                                                            |
 | Live Browser Reloading                 | Reload the browser in real-time anytime an edit is made without the need for an extension. (Run `yarn start` and edit your files)                                                                                                                           |
 | Cross-device Synchronization           | Synchronize clicks, scrolls, forms and live-reload across multiple devices as you edit your project. Powered by [BrowserSync](http://browsersync.io). (Run `yarn start` and open up the IP provided on other devices on your network)                       |
-| Production ready builds                     | Pre-configured build pipeline to create optimized assets, pre-loads etc.                                                                                                                                              |
-| Reliable UI5 Cache-Buster                     | Ensure your users are always enjoying the latest version of your app                                                                                                                                              |
-| A Hackable UI5 Build Process                     | tbd                                                                                                                                              |
+| Production ready builds                     | Pre-configured build pipeline to create optimized assets, UI5 pre-loads etc. just as you would expect from a state of the art build process.                                                                                                                                               |
+| Reliable UI5 Cache-Buster                     | Ensure your users are always enjoying the latest version of your app. OpenUI5 provides only solutions proprietary for SAP Gateway and SAP Cloud Platform. In this project, we added a more reliable mechanism that is open source and available for any environment.                                                                                                                                              |
+| A Hackable UI5 Build Process                     | Define in your `package.json` the source of your OpenUI5 library. Supported options are online CDN link, download URL of a prebuild library or a GitHub release link of OpenUI5. In all cases, the build process will handle the download, unzip and OpenUI5 build task by its own. Lean back and wait relaxed.                                                                                                                                            |
 
 <!-- | Code Linting               | JavaScript code linting is done using [ESLint](http://eslint.org) - a pluggable linter tool for identifying and reporting on patterns in JavaScript. Run `yarn test` to lint your repository.                                                                         | -->
 
+## Distribution
+
+Start build:
+_Will create a `dist` directory in your project root._
+```
+yarn build
+```
+
+Afterwards, the production app build can be tested by run `gulp testDist`. The app should open in your browser automatically, otherwise open: `http://localhost:3000`
 
 ### Contributing & Troubleshooting
 
