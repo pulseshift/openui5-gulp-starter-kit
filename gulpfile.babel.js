@@ -102,7 +102,7 @@ const build = gulp.series(
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), cleanDist),
   gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
   ui5preloads,
-  ui5CacheBuster
+  ui5cacheBust
 )
 export { build }
 
@@ -509,7 +509,7 @@ function ui5preloads() {
  * ----------------------------------------------------------- */
 
 // [production build]
-function ui5CacheBuster(done) {
+function ui5cacheBust(done) {
   return (
     gulp
       .src(paths.cacheBuster.src)
