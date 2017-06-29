@@ -1,11 +1,22 @@
 /* Enter your custom styles here */
 
+// disable scrollbar
+body.sapUiBody {
+  display: inline;
+
+  // disable all outlines
+  *, *:focus, *:before, *:after {
+    outline: none !important;
+  }
+}
+
+
 // variables
 @appTodoThemeColor: #ff1744;
 
 // mixins
 .appTodoFontType {
-  font: 'Helvetica Neue Light', Helvetica, Arial, sans-serif;
+  font: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 .appTodoBaseFontColor {
   color: #4d4d4d;
@@ -22,10 +33,16 @@
 
 // todo app input
 .appTodoItemInput {
+
+  // disable outline
+  .sapMInputDivWrapper:before {
+    display: none;
+  }
+
+  // style input
   input {
     font-size: 20px;
     border: none;
-    outline: none;
     .appTodoFontType;
     .appTodoBaseFontColor;
     &::input-placeholder,

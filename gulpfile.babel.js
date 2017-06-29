@@ -140,6 +140,27 @@ function watch() {
   gutil.log(gutil.colors.green(sSuccessMessage))
 }
 
+// [production build]
+export function testDist() {
+  const sSuccessMessage =
+    '\u{1F64C}  (Server started, use Ctrl+C to stop and go back to the console...)'
+
+  // start HTTP server
+  server.init({
+    server: {
+      baseDir: `./${DIST}`,
+      routes: {
+        '/ui5': './ui5'
+      }
+    }
+    // open the site in chrome canary only
+    // browser: ['google chrome canary']
+  })
+
+  // log success message
+  gutil.log(gutil.colors.green(sSuccessMessage))
+}
+
 /* ----------------------------------------------------------- *
  * reload browser
  * ----------------------------------------------------------- */
@@ -161,7 +182,9 @@ export function downloadOpenUI5() {
   const isRemoteLink = oSource.url.startsWith('http')
   const sUI5Version = oSource.version
 
-  const sDownloadPath = path.resolve(__dirname, './download')
+  const sDownloadPath = !oSource.isPrebuild
+    ? path.resolve(__dirname, './.download')
+    : path.resolve(__dirname, `./ui5/${sUI5Version}`)
   const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
 
   // return promise
@@ -177,7 +200,7 @@ export function buildOpenUI5() {
   const isRemoteLink = oSource.url.startsWith('http')
   const sUI5Version = oSource.version
 
-  const sDownloadPath = path.resolve(__dirname, './download')
+  const sDownloadPath = path.resolve(__dirname, './.download')
   const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
 
   // define build Promise
@@ -242,7 +265,7 @@ function getRelativeUI5SrcURL() {
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   } else if (oSource.isArchive && isRemoteLink && !oSource.isPrebuild) {
     // ui5/version/sap-ui-core.js
-    sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`
+    sOpenUI5Path = `ui5/${oSource.version}/resources/sap-ui-core.js`
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   } else if (!oSource.isArchive && isRemoteLink) {
     // direct link
@@ -282,19 +305,7 @@ function entryDist() {
       // compile handlebars to HTML
       .pipe(hdlbars(getHandlebarsProps()))
       // minify HTML
-      .pipe(
-        htmlmin({
-          removeComments: true,
-          collapseWhitespace: true,
-          collapseBooleanAttributes: true,
-          removeAttributeQuotes: true,
-          removeRedundantAttributes: true,
-          removeEmptyAttributes: true,
-          removeScriptTypeAttributes: true,
-          removeStyleLinkTypeAttributes: true,
-          removeOptionalTags: true
-        })
-      )
+      .pipe(htmlmin())
       .pipe(rename({ extname: '.html' }))
       .pipe(gulp.dest(DIST))
   )

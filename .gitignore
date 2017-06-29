@@ -2,11 +2,11 @@
 *.DS_Store
 
 ### Build Process ###
-/.tmp/
 /dist/
 /ui5/
+/.tmp/
 /.maps/
-/download/
+/.download/
 
 ### Node ###
 node_modules/

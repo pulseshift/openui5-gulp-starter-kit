@@ -26,7 +26,7 @@ _Will build all resources start watcher task and start a HTTP server_
 ```
 $ yarn build
 ```
-App should open in your browser automatically: `http://localhost:3001`
+App should open in your browser automatically: `http://localhost:3000`
 
 
 
