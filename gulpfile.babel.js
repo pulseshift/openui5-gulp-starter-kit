@@ -125,14 +125,13 @@ function watch() {
   server.init({
     // learn more about the powerful options (proxy, middleware, etc.) here:
     // https://www.browsersync.io/docs/options
+    port: 3000,
     server: {
       baseDir: `./${DEV}`,
       routes: {
         '/ui5': './ui5'
       }
     }
-    // open the site in chrome canary only
-    // browser: ['google chrome canary']
     // proxy: 'yourlocal.dev'
   })
 
@@ -147,14 +146,13 @@ export function testDist() {
 
   // start HTTP server
   server.init({
+    port: 3000,
     server: {
       baseDir: `./${DIST}`,
       routes: {
         '/ui5': './ui5'
       }
     }
-    // open the site in chrome canary only
-    // browser: ['google chrome canary']
   })
 
   // log success message

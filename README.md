@@ -57,7 +57,7 @@ _Will create a `dist` directory in your project root._
 yarn build
 ```
 
-Afterwards, the production app build can be tested by run `gulp testDist`. The app should open in your browser automatically, otherwise open: `http://localhost:3000`
+Afterwards, the production app build can be tested by run `yarn gulp testDist`. The app should open in your browser automatically, otherwise open: `http://localhost:3000`
 
 ### Contributing & Troubleshooting
 
