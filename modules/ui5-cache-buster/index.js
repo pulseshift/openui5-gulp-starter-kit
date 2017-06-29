@@ -55,22 +55,27 @@ export default function ui5Bust(oHTMLFile) {
       sAppPath
     )
 
+    // TODO: at the time the cache buster assumes that all resource roots are app components
+    // a fallback should be added to create a hash based on all files if no preload was found
+
     // read relevant resources for hash generation
-    const oPreloadFileContent = fs.readFileSync(
-      path.resolve(sResolvedAppPath, 'Component-preload.js'),
-      'utf8'
-    )
+    const sPreloadPath = path.resolve(sResolvedAppPath, 'Component-preload.js')
+    const oPreloadFileContent = fs.existsSync(sPreloadPath)
+      ? fs.readFileSync(sPreloadPath, 'utf8')
+      : null
 
     // some resources will be requested additionally to 'Component-preload.js'
     // fortunately they 'should' be listed in manifest.json, therefore, we will look them up there
-    const oManifestFileContent = fs.readFileSync(
-      path.resolve(sResolvedAppPath, 'manifest.json'),
-      'utf8'
-    )
-    const oManifestJSON = JSON.parse(oManifestFileContent)
-    const aResourceKeys = !oManifestJSON['sap.ui5'].resources
-      ? []
-      : Object.keys(oManifestJSON['sap.ui5'].resources)
+    const sManifestPath = path.resolve(sResolvedAppPath, 'manifest.json')
+    const oManifestFileContent = fs.existsSync(sManifestPath)
+      ? fs.readFileSync(sManifestPath, 'utf8')
+      : null
+    const oManifestJSON = oManifestFileContent
+      ? JSON.parse(oManifestFileContent)
+      : { 'sap.ui5': null }
+    const aResourceKeys = oManifestJSON['sap.ui5'].resources
+      ? Object.keys(oManifestJSON['sap.ui5'].resources)
+      : []
     const aDependedResourceContents = aResourceKeys.reduce(
       (aContentsList, sResourceKey) => {
         return aContentsList.concat(
@@ -85,21 +90,25 @@ export default function ui5Bust(oHTMLFile) {
       []
     )
 
-    // generate hash based on resource contents of the app
+    // generate hash based on resource contents of the app,
+    // but keep app path if no contents for hash generation have been found
     const aBufferList = aDependedResourceContents
-      .concat(oPreloadFileContent)
+      .concat(oPreloadFileContent ? oPreloadFileContent : [])
       .map(oContent => new Buffer(oContent))
-    const sNewHash = loaderUtils
-      .getHashDigest(
-        Buffer.concat(aBufferList),
-        HASH_TYPE,
-        DIGEST_TYPE,
-        MAX_LENGTH
-      )
-      // The path part is or is not case sensitive, depending on the server environment and server.
-      // Typically Windows machines are case insensitive, while Linux machines are case sensitive.
-      // To be on the safe side, we only will use lower case paths.
-      .toLowerCase()
+    const sNewHash =
+      aBufferList.length === 0
+        ? sAppPath
+        : loaderUtils
+            .getHashDigest(
+              Buffer.concat(aBufferList),
+              HASH_TYPE,
+              DIGEST_TYPE,
+              MAX_LENGTH
+            )
+            // The path part is or is not case sensitive, depending on the server environment and server.
+            // Typically Windows machines are case insensitive, while Linux machines are case sensitive.
+            // To be on the safe side, we only will use lower case paths.
+            .toLowerCase()
 
     // compose new app path
     const aPathChain = sAppPath.split('/')
