@@ -180,8 +180,8 @@ export function downloadOpenUI5() {
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
   const sUI5Version = oSource.version
-  const sDownloadURL = handlebars.compile(oSource.url)(oSource)
-  const isRemoteLink = sDownloadURL.startsWith('http')
+  const sCompiledURL = handlebars.compile(oSource.url)(oSource)
+  const isRemoteLink = sCompiledURL.startsWith('http')
 
   const sDownloadPath = !oSource.isPrebuild
     ? path.resolve(__dirname, './.download')
@@ -190,7 +190,7 @@ export function downloadOpenUI5() {
 
   // return promise
   return oSource.isArchive && isRemoteLink && !fs.existsSync(sUI5TargetPath)
-    ? downloadUI5(sDownloadURL, sDownloadPath, sUI5Version)
+    ? downloadUI5(sCompiledURL, sDownloadPath, sUI5Version)
     : Promise.resolve()
 }
 
@@ -199,8 +199,8 @@ export function buildOpenUI5() {
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
   const sUI5Version = oSource.version
-  const sDownloadURL = handlebars.compile(oSource.url)(oSource)
-  const isRemoteLink = sDownloadURL.startsWith('http')
+  const sCompiledURL = handlebars.compile(oSource.url)(oSource)
+  const isRemoteLink = sCompiledURL.startsWith('http')
 
   const sDownloadPath = path.resolve(__dirname, './.download')
   const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
@@ -256,7 +256,8 @@ function getRelativeUI5SrcURL() {
   const sEntryHTMLPath = pkg.main
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
-  const isRemoteLink = oSource.url.startsWith('http')
+  const sCompiledURL = handlebars.compile(oSource.url)(oSource)
+  const isRemoteLink = sCompiledURL.startsWith('http')
 
   let sOpenUI5Path = ''
   let sRelativeUI5Path = ''
@@ -271,10 +272,10 @@ function getRelativeUI5SrcURL() {
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   } else if (!oSource.isArchive && isRemoteLink) {
     // direct link
-    sRelativeUI5Path = oSource.url
+    sRelativeUI5Path = sCompiledURL
   } else if (!isRemoteLink) {
     // direct link
-    sOpenUI5Path = oSource.url
+    sOpenUI5Path = sCompiledURL
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   }
 

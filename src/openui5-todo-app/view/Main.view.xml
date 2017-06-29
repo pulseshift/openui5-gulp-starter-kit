@@ -6,7 +6,7 @@
   <Page
     class="sapUiResponsiveContentPadding"
     showHeader="false"
-    enableScrolling="false">
+    enableScrolling="true">
     <content>
       <VBox
         alignItems="Center">
@@ -43,6 +43,7 @@
           <List
             class="appTodoListMain"
             mode="Delete"
+            noDataText="{i18n>Main.noTodos}"
             delete="onDeleteTodo"
             items="{todo>/items}">
             <CustomListItem
