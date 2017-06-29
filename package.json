@@ -32,19 +32,19 @@
     "src": "cdnDownload",
     "srcLinks": {
       "github": {
-        "url": "https://github.com/SAP/openui5/archive/1.48.0.zip",
+        "url": "https://github.com/SAP/openui5/archive/{{version}}.zip",
         "version": "1.48.0",
         "isPrebuild": false,
         "isArchive": true
       },
       "cdnDownload": {
-        "url": "https://openui5beta.hana.ondemand.com/downloads/openui5-sdk-1.48.2.zip",
+        "url": "https://openui5beta.hana.ondemand.com/downloads/openui5-sdk-{{version}}.zip",
         "version": "1.48.2",
         "isPrebuild": true,
         "isArchive": true
       },
       "cdn": {
-        "url": "https://openui5.hana.ondemand.com/1.48.2/resources/sap-ui-core.js",
+        "url": "https://openui5.hana.ondemand.com/{{version}}/resources/sap-ui-core.js",
         "version": "1.48.2",
         "isPrebuild": true,
         "isArchive": false

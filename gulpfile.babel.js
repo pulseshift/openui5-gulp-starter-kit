@@ -179,8 +179,9 @@ function reload(done) {
 export function downloadOpenUI5() {
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
-  const isRemoteLink = oSource.url.startsWith('http')
   const sUI5Version = oSource.version
+  const sDownloadURL = handlebars.compile(oSource.url)(oSource)
+  const isRemoteLink = sDownloadURL.startsWith('http')
 
   const sDownloadPath = !oSource.isPrebuild
     ? path.resolve(__dirname, './.download')
@@ -189,7 +190,7 @@ export function downloadOpenUI5() {
 
   // return promise
   return oSource.isArchive && isRemoteLink && !fs.existsSync(sUI5TargetPath)
-    ? downloadUI5(oSource.url, sDownloadPath, sUI5Version)
+    ? downloadUI5(sDownloadURL, sDownloadPath, sUI5Version)
     : Promise.resolve()
 }
 
@@ -197,8 +198,9 @@ export function downloadOpenUI5() {
 export function buildOpenUI5() {
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
-  const isRemoteLink = oSource.url.startsWith('http')
   const sUI5Version = oSource.version
+  const sDownloadURL = handlebars.compile(oSource.url)(oSource)
+  const isRemoteLink = sDownloadURL.startsWith('http')
 
   const sDownloadPath = path.resolve(__dirname, './.download')
   const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
