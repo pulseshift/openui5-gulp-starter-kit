@@ -181,9 +181,11 @@ export function downloadOpenUI5() {
   const sCompiledURL = handlebars.compile(oSource.url)(oSource)
   const isRemoteLink = sCompiledURL.startsWith('http')
 
+  // if UI5 download link is marked as prebuild,
+  // we can extract it directly into '/ui5' target directory
   const sDownloadPath = !oSource.isPrebuild
     ? path.resolve(__dirname, './.download')
-    : path.resolve(__dirname, `./ui5/${sUI5Version}`)
+    : path.resolve(__dirname, `./ui5`)
   const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
 
   // return promise
@@ -205,11 +207,7 @@ export function buildOpenUI5() {
 
   // define build Promise
   return oSource.isPrebuild === false
-    ? buildUI5(
-        `${sDownloadPath}/download-${sUI5Version}`,
-        sUI5TargetPath,
-        sUI5Version
-      )
+    ? buildUI5(`${sDownloadPath}/${sUI5Version}`, sUI5TargetPath, sUI5Version)
     : Promise.resolve()
 }
 
@@ -260,12 +258,12 @@ function getRelativeUI5SrcURL() {
   let sOpenUI5Path = ''
   let sRelativeUI5Path = ''
 
-  if (oSource.isArchive && isRemoteLink && oSource.isPrebuild) {
+  if (oSource.isArchive && isRemoteLink && !oSource.isPrebuild) {
     // ui5/version/sap-ui-core.js
     sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
-  } else if (oSource.isArchive && isRemoteLink && !oSource.isPrebuild) {
-    // ui5/version/sap-ui-core.js
+  } else if (oSource.isArchive && isRemoteLink && oSource.isPrebuild) {
+    // ui5/version/resources/sap-ui-core.js
     sOpenUI5Path = `ui5/${oSource.version}/resources/sap-ui-core.js`
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   } else if (!oSource.isArchive && isRemoteLink) {

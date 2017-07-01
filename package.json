@@ -8,10 +8,7 @@
     "precommit": "lint-staged"
   },
   "lint-staged": {
-    "*.js": [
-      "prettier --write --no-semi --single-quote",
-      "git add"
-    ]
+    "*.js": ["prettier --write --no-semi --single-quote", "git add"]
   },
   "repository": {
     "url": "git+https://github.com/pulseshift/openui5-gulp-starter-kit.git",
@@ -31,15 +28,21 @@
     "indexTitle": "UI5 Todo App",
     "src": "cdn",
     "srcLinks": {
-      "github": {
+      "githubRelease": {
         "url": "https://github.com/SAP/openui5/archive/{{version}}.zip",
         "version": "1.48.0",
         "isPrebuild": false,
         "isArchive": true
       },
+      "githubMaster": {
+        "url": "https://github.com/SAP/openui5/archive/master.zip",
+        "version": "1.49.0",
+        "isPrebuild": false,
+        "isArchive": true
+      },
       "cdnDownload": {
         "url": "https://openui5beta.hana.ondemand.com/downloads/openui5-sdk-{{version}}.zip",
-        "version": "1.48.2",
+        "version": "1.48.3",
         "isPrebuild": true,
         "isArchive": true
       },
@@ -98,5 +101,8 @@
     "lint-staged": "^4.0.0",
     "loader-utils": "^1.1.0",
     "prettier": "^1.5.1"
+  },
+  "dependencies": {
+    "less-openui5": "^0.3.1"
   }
 }

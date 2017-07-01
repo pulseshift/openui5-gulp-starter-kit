@@ -22,11 +22,13 @@ import uglify from 'gulp-uglify'
 import cleanCSS from 'gulp-clean-css'
 import gutil from 'gulp-util'
 import ui5preload from 'gulp-ui5-preload'
-// TODO: upgrade to new 'less-openui5' module and refactore code
 import lessOpenUI5 from 'less-openui5'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+
+// create a builder instance
+const builder = new lessOpenUI5.Builder()
 
 // export functions
 export { downloadUI5, buildUI5 }
@@ -36,7 +38,7 @@ export { downloadUI5, buildUI5 }
  *
  * @param {sDownloadURL} [string] Download URL of required archive.
  * @param {sDownloadPath} [string] Destination path for the download archive and extracted files.
- * @param {sUI5Version} [string] Version number of UI5 to create at <code>sDownloadPath</code> a subdirectory named <code>/download-{{sUI5Version}}</code>.
+ * @param {sUI5Version} [string] Version number of UI5 to create at <code>sDownloadPath</code> a subdirectory named <code>/{{sUI5Version}}</code>.
  * @returns {Promise} Promise without return value.
  */
 function downloadUI5(sDownloadURL, sDownloadPath, sUI5Version) {
@@ -60,26 +62,17 @@ function downloadUI5(sDownloadURL, sDownloadPath, sUI5Version) {
   ])
 
   // check if ui5 library was already downloaded and ectracted
-  if (!fs.existsSync(`${sDownloadPath}/download-${sUI5Version}`)) {
+  if (!fs.existsSync(`${sDownloadPath}/${sUI5Version}`)) {
     // download and unzip sources
     return new Promise(resolve => {
       download(sDownloadURL)
         .pipe(unzip())
-        .pipe(gulp.dest(sDownloadPath))
+        .pipe(gulp.dest(`${sDownloadPath}/${sUI5Version}`))
         .on('end', () => {
-          // 3. rename downloaded ui5 directory fro openui5-VERSION to download-VERSION
-          try {
-            execSync(`mv openui5-${sUI5Version} download-${sUI5Version}`, {
-              cwd: sDownloadPath,
-              stdio: [0, 0, 0]
-            })
-          } catch (e) {
-            // folder doesn't exist or was renamed manually
-          }
           // log finished msg
           logEnd(`download UI5 ${sUI5Version}`, iTimestamp, [
             '(download available at',
-            gutil.colors.cyan(`${sDownloadPath}/download-${sUI5Version}`),
+            gutil.colors.cyan(`${sDownloadPath}/${sUI5Version}`),
             ')'
           ])
           resolve()
@@ -90,7 +83,7 @@ function downloadUI5(sDownloadURL, sDownloadPath, sUI5Version) {
   // download is already available
   logEnd(`download UI5 ${sUI5Version}`, iTimestamp, [
     '(directory',
-    gutil.colors.cyan(`${sDownloadPath}/download-${sUI5Version}`),
+    gutil.colors.cyan(`${sDownloadPath}/${sUI5Version}`),
     'already exist)'
   ])
   return Promise.resolve()
@@ -109,15 +102,18 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
   if (!sUI5SrcPath) {
     gutil.log('gulp-lib-util', gutil.colors.red('No UI5 source path provided'))
   }
+  if (!fs.existsSync(sUI5SrcPath)) {
+    gutil.log(
+      'gulp-lib-util',
+      gutil.colors.red(`UI5 source path ${sUI5SrcPath} does not eist`)
+    )
+  }
   if (!sUI5TargetPath) {
     gutil.log('gulp-lib-util', gutil.colors.red('No UI5 target path provided'))
   }
   if (!sUI5Version) {
     gutil.log('gulp-lib-util', gutil.colors.red('No UI5 version provided'))
   }
-
-  const NOW = new Date()
-  const sBuildTime = [NOW.toDateString(), NOW.toTimeString()].join(' - ')
 
   // if ui5 target location already exist, cancel to prevent unwanted overrides
   if (fs.existsSync(sUI5TargetPath)) {
@@ -128,6 +124,37 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     )
     return Promise.resolve()
   }
+
+  const isSrcInDownloadRoot = fs.existsSync(`${sUI5SrcPath}/src`)
+  const isSrcInDownloadSubDir = fs
+    .readdirSync(sUI5SrcPath)
+    .some(sPath => fs.existsSync(`${path.join(sUI5SrcPath, sPath)}/src`))
+
+  // cancel if UI5 source code location ('/src' directory) could not be found
+  if (!isSrcInDownloadRoot && !isSrcInDownloadSubDir) {
+    gutil.log(
+      'UI5 source code not found in given directory',
+      gutil.colors.cyan(sUI5SrcPath),
+      ', please check if the given path contains the correct OpenUI5 source code structure.'
+    )
+    return Promise.resolve()
+  }
+
+  // update UI5 source path if '/src' directory was found in a sub directory
+  if (isSrcInDownloadSubDir) {
+    sUI5SrcPath = fs
+      .readdirSync(sUI5SrcPath)
+      .reduce(
+        (sFinalPath, sPath) =>
+          fs.existsSync(`${path.join(sUI5SrcPath, sPath)}/src`)
+            ? path.join(sUI5SrcPath, sPath)
+            : sFinalPath,
+        sUI5SrcPath
+      )
+  }
+
+  const NOW = new Date()
+  const sBuildTime = [NOW.toDateString(), NOW.toTimeString()].join(' - ')
 
   const sCopyrightBanner = `UI development toolkit for HTML5 (OpenUI5)
  * (c) Copyright 2009-2017 SAP SE or an SAP affiliate company.
@@ -180,7 +207,7 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
       // extract themes
       aUI5Themes = aPaths
         .filter(sSrc => {
-          // filter for directories only that starts with 'themelib'
+          // filter for directories that only starts with 'themelib'
           return (
             fs.statSync(path.join(`${sUI5SrcPath}/src/`, sSrc)).isDirectory() &&
             sSrc.startsWith('themelib')
@@ -440,7 +467,26 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
           oStartTimes['copy themes'] = Date.now()
           return (
             gulp
-              .src([...aUI5Themes.map(sThemePath => `${sThemePath}/src/**/*`)])
+              .src([
+                // copy UI5 theme libraries (e.g. sap_belize, sap_bluecrystal, etc.)
+                ...aUI5Themes.map(sThemePath => `${sThemePath}/src/**/*`),
+                // copy UI5 base and high contrast theme from module paths
+                ...aUI5Modules.map(
+                  oModule => `${oModule.path}/src/**/themes/**/*`
+                )
+              ])
+              // update path of base and high contrast theme
+              .pipe(
+                rename(path => {
+                  // normal path: sap/m/themes/sap_belize
+                  // update path: sap.m/src/sap/m/themes/base => sap/m/themes/base
+                  const aPathChain = path.dirname.split('/')
+                  path.dirname =
+                    aPathChain.length > 1 && aPathChain[1] === 'src'
+                      ? aPathChain.slice(2, aPathChain.length - 1).join('/')
+                      : path.dirname
+                })
+              )
               // update copyright of library less sources
               .pipe(
                 gulpif(
@@ -466,33 +512,25 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     .then(
       () =>
         new Promise((resolve, reject) => {
-          logStart('compile themes library.source.less resources')
-          oStartTimes[
-            'compile themes library.source.less resources'
-          ] = Date.now()
+          logStart('compile themes')
+          oStartTimes['compile themes'] = Date.now()
+          gutil.log(
+            "'File not found' errors are fixed automatically, therefore, they can be ignored."
+          )
           return (
             gulp
               .src([`${sUI5TargetPath}/**/themes/**/library.source.less`])
               // create library.css
               .pipe(
                 tap(oFile => {
-                  const sDestDir = /.*(?=library.source.less$)/.exec(
-                    oFile.path
-                  )[0]
-                  const oRaw = oFile.contents.toString('utf8')
-
                   // TODO: tap into library.source.less files to customize ui5 bundle
-
-                  compileUI5LessLib(sDestDir, oRaw, () => {}) // no callback required
+                  compileUI5LessLib(oFile)
                 })
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
               .on('end', () => {
-                logEnd(
-                  'compile themes library.source.less resources',
-                  oStartTimes['compile themes library.source.less resources']
-                )
+                logEnd('compile themes', oStartTimes['compile themes'])
                 resolve()
               })
               .on('error', reject)
@@ -591,91 +629,101 @@ function logEnd(sTaskName = '', iTimestampStart = Date.now(), aPostLogs = []) {
   )
 }
 
-/**
- * Build a valid CSS library files.
- *
- * @param {sDestDir} [string] Destination directory, where to write library.css.
- * @param {sLessFileContent} [string] Content of LESS file to be compiled in utf8 format.
- * @param {cb} [function] Callback function to be called, when LESS compilation finished.
- */
-function compileUI5LessLib(sDestDir, sLessFileContent, cb) {
+function compileUI5LessLib(oFile) {
+  const sDestDir = path.dirname(oFile.path)
+  const sFileName = oFile.path.split('/').pop()
+  const sLessFileContent = oFile.contents.toString('utf8')
+
   // options for less-openui5
   const oOptions = {
+    lessInput: sLessFileContent,
     rootPaths: [sDestDir],
     rtl: true,
-    parser: { filename: `${sDestDir}library.source.less` },
+    parser: {
+      filename: sFileName,
+      paths: [sDestDir]
+    },
     compiler: { compress: false }
   }
 
-  // execute build css build process
-  lessOpenUI5.build(sLessFileContent, oOptions, (oLessError, result) => {
-    if (oLessError) {
-      // build css content failed (in 99% of the cases, because of a missing .less file)
-      // create empty less file and try again if build failed
+  // build a theme
+  const oBuildThemePromise = builder
+    .build(oOptions)
+    .catch(oError => {
+      // CSS build fails in 99% of all cases, because of a missing .less file
+      // create empty LESS file and try again if build failed
 
-      // try to parse error message to find out which missing less file caused the failed build
-      const sMissingFileName = (oLessError.message.match(
+      // try to parse error message to find out which missing LESS file caused the failed build
+      const sMissingFileName = (oError.message.match(
         /((\.*?\/?)*\w.*\.\w+)/g
       ) || [''])[0]
-      const sSourceFileName = oLessError.filename
+      const sSourceFileName = oError.filename
       const sMissingFilePath = path.resolve(
+        sDestDir,
         sSourceFileName.replace('library.source.less', ''),
         sMissingFileName
       )
-      const sNewFileContent = ''
+      let isIssueFixed = false
 
+      // create missing .less file (with empty content), else the library.css can't be created
       if (!fs.existsSync(sMissingFilePath)) {
-        // create missing .less file (with empty content), else the library.css can't be created
-        fs.writeFile(sMissingFilePath, sNewFileContent, oWriteFileError => {
-          // if missing file could be created, rebuild, again
-          if (oWriteFileError === null) {
-            compileUI5LessLib(sDestDir, sLessFileContent, () => cb)
-            return
-          }
-          // if this error message raises up, the build failed due to the other 1% cases
-          gutil.log(gutil.colors.red('Compile UI5 less lib: '), oWriteFileError)
-          cb()
-        })
-      } else {
-        cb()
+        try {
+          fs.writeFileSync(sMissingFilePath, '')
+          isIssueFixed = true
+        } catch (e) {
+          isIssueFixed = false
+        }
       }
-    } else {
-      // B) build css content was successfull >> save result
+
+      if (!isIssueFixed) {
+        // if this error message raises up, the build failed due to the other 1% cases
+        gutil.log(gutil.colors.red('Compile UI5 less lib: '), oError.message)
+      }
+
+      // if missing file could be created, try theme build again
+      return isIssueFixed ? compileUI5LessLib(oFile) : Promise.reject()
+    })
+    .then(oResult => {
+      // build css content was successfull >> save result
       const aTargetFiles = [
         {
-          path: `${sDestDir}library.css`,
-          content: result.css
+          path: `${sDestDir}/library.css`,
+          content: oResult.css
         },
         {
-          path: `${sDestDir}library-RTL.css`,
-          content: result.cssRtl
+          path: `${sDestDir}/library-RTL.css`,
+          content: oResult.cssRtl
         },
         {
-          path: `${sDestDir}library-parameters.json`,
+          path: `${sDestDir}/library-parameters.json`,
           content:
             JSON.stringify(
-              result.variables,
+              oResult.variables,
               null,
               oOptions.compiler.compress ? 0 : 4
             ) || ''
         }
       ]
 
-      Promise.all(
-        aTargetFiles.map(oFile => {
-          return new Promise((resolve, reject) =>
-            fs.writeFile(
-              oFile.path,
-              oFile.content,
-              oError => (oError ? reject() : resolve())
-            )
+      const aWriteFilesPromises = aTargetFiles.map(oFile => {
+        return new Promise((resolve, reject) =>
+          fs.writeFile(
+            oFile.path,
+            oFile.content,
+            oError => (oError ? reject() : resolve())
           )
-        })
-      )
-        .then(cb)
-        .catch(cb)
-    }
-  })
+        )
+      })
+
+      // return promise
+      return Promise.all(aWriteFilesPromises)
+    })
+    .then(() => {
+      // clear builder cache when finished to cleanup memory
+      builder.clearCache()
+    })
+
+  return oBuildThemePromise
 }
 
 /**
