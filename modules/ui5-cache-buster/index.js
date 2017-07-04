@@ -137,9 +137,15 @@ export default function ui5Bust(oHTMLFile) {
 
   // success message
   gutil.log(
+    'ui5-cache-buster:',
     '⚡️  Successfully cache bust',
-    gutil.colors.cyan(oHTMLFile.path),
-    "(resources who have not changed, will still be fetched from the users browser's cache)"
+    gutil.colors.cyan(oHTMLFile.path)
+  )
+  gutil.log(
+    'ui5-cache-buster:',
+    gutil.colors.cyan(
+      "Resources who have not changed, will still be fetched from the users browser's cache."
+    )
   )
 
   // return updated index.html again

@@ -31,19 +31,29 @@ import ui5preload from 'gulp-ui5-preload'
 import ui5Bust from './modules/ui5-cache-buster'
 import { downloadUI5, buildUI5 } from './modules/ui5-lib-util'
 import LessAutoprefix from 'less-plugin-autoprefix'
+import ora from 'ora'
 import del from 'del'
 import path from 'path'
 import fs from 'fs'
+import commander from 'commander'
 import server from 'browser-sync'
 import handlebars from 'handlebars'
 import gulpHandlebars from 'gulp-handlebars-html'
 
+// parse program commands
+commander.version(pkg.version).option('--silent').parse(process.argv)
+
 const hdlbars = gulpHandlebars(handlebars)
+const spinner = ora()
 
 // register handlebars helper function
 handlebars.registerHelper('secure', function(str) {
   return new handlebars.SafeString(str)
 })
+
+// switch between gulp log and custom log
+spinner.enabled = commander.silent
+spinner.print = sText => spinner.stopAndPersist({ text: sText })
 
 /*
  * CONFIGURATION
@@ -87,10 +97,43 @@ const paths = {
  * @public
  */
 const start = gulp.series(
+  function startSpinner(done) {
+    spinner.print(' ')
+    spinner.start('Start development server...')
+    done()
+  },
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), clean),
   gulp.parallel(entry, assets, scripts, styles),
+  logStats,
   watch
 )
+function logStats(done) {
+  const sSourceID = pkg.ui5.src
+  const oSource = pkg.ui5.srcLinks[sSourceID]
+  const sUI5Version = oSource.version
+  const sOnlineUI5State =
+    !oSource.isArchive && oSource.isPrebuild ? '(remote)' : ''
+  const sUI5Details = !oSource.isPrebuild ? '(custom build)' : sOnlineUI5State
+
+  const iApps = (pkg.ui5.apps || []).length
+  const iThemes = (pkg.ui5.themes || []).length
+  const iLibs = (pkg.ui5.libraries || []).length
+
+  // print success message
+  spinner
+    .succeed(
+      'Development server started, use Ctrl+C to stop and go back to the console...'
+    )
+    .print(' ')
+    .print(`UI5 Version: ${sUI5Version} ${sUI5Details}`)
+    .print(' ')
+    .print('UI5 assets:')
+    .print(`\u{25FB}  ${iApps} app${iApps !== 1 ? 's' : ''}`)
+    .print(`\u{25FB}  ${iThemes} theme${iThemes !== 1 ? 's' : ''}`)
+    .print(`\u{25FB}  ${iLibs} librar${iLibs !== 1 ? 'ies' : 'y'}`)
+    .print(' ')
+  done()
+}
 export default start
 
 /**
@@ -99,11 +142,45 @@ export default start
  * @public
  */
 const build = gulp.series(
+  function startSpinner(done) {
+    spinner.print(' ')
+    spinner.start('Build start...')
+    done()
+  },
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), cleanDist),
   gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
   ui5preloads,
-  ui5cacheBust
+  ui5cacheBust,
+  logStatsDist
 )
+function logStatsDist(done) {
+  const sSourceID = pkg.ui5.src
+  const oSource = pkg.ui5.srcLinks[sSourceID]
+  const sUI5Version = oSource.version
+  const sOnlineUI5State =
+    !oSource.isArchive && oSource.isPrebuild ? '(remote)' : ''
+  const sUI5Details = !oSource.isPrebuild ? '(custom build)' : sOnlineUI5State
+
+  const iApps = (pkg.ui5.apps || []).length
+  const iThemes = (pkg.ui5.themes || []).length
+  const iLibs = (pkg.ui5.libraries || []).length
+
+  // print success message
+  spinner
+    .succeed('Build successfull.')
+    .print(' ')
+    .print(`Build entry: ${pkg.main}`)
+    .print(`Build output: ${path.relative(__dirname, DIST)}`)
+    .print(' ')
+    .print(`UI5 Version: ${sUI5Version} ${sUI5Details}`)
+    .print(' ')
+    .print('UI5 assets created:')
+    .print(`\u{25FB}  ${iApps} app${iApps !== 1 ? 's' : ''}`)
+    .print(`\u{25FB}  ${iThemes} theme${iThemes !== 1 ? 's' : ''}`)
+    .print(`\u{25FB}  ${iLibs} librar${iLibs !== 1 ? 'ies' : 'y'}`)
+    .print(' ')
+  done()
+}
 export { build }
 
 /* ----------------------------------------------------------- *
@@ -187,10 +264,37 @@ export function downloadOpenUI5() {
     ? path.resolve(__dirname, './.download')
     : path.resolve(__dirname, `./ui5`)
   const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
+  const isDownloadRequired =
+    oSource.isArchive &&
+    isRemoteLink &&
+    // !fs.existsSync(sUI5TargetPath) &&
+    !fs.existsSync(`${sDownloadPath}/${sUI5Version}`)
+  const oDownloadOptions = {
+    onProgress(iStep, iTotalSteps, oStepDetails) {
+      // update spinner state
+      spinner.text = `Downloading UI5... [${iStep}/${iTotalSteps}] ${Math.round(
+        oStepDetails.progress || 0
+      )}% (${oStepDetails.name})`
+    }
+  }
+
+  if (isDownloadRequired) {
+    // update spinner state
+    spinner.text =
+      'Downloading UI5... (this task can take several minutes, please be patient)'
+  }
 
   // return promise
-  return oSource.isArchive && isRemoteLink && !fs.existsSync(sUI5TargetPath)
-    ? downloadUI5(sCompiledURL, sDownloadPath, sUI5Version)
+  return isDownloadRequired
+    ? downloadUI5(sCompiledURL, sDownloadPath, sUI5Version, oDownloadOptions)
+        .then(sSuccessMessage => {
+          spinner.success(sSuccessMessage)
+          spinner.start('')
+        })
+        .catch(sErrorMessage => {
+          spinner.fail(sErrorMessage)
+          spinner.start('')
+        })
     : Promise.resolve()
 }
 
@@ -204,10 +308,37 @@ export function buildOpenUI5() {
 
   const sDownloadPath = path.resolve(__dirname, './.download')
   const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
+  const isBuildRequired =
+    oSource.isPrebuild === false && !fs.existsSync(sUI5TargetPath)
+  const oBuildOptions = {
+    onProgress(iStep, iTotalSteps, oStepDetails) {
+      // update spinner state
+      spinner.text = `Build UI5... [${iStep}/${iTotalSteps}] (${oStepDetails.name})`
+    }
+  }
+
+  if (isBuildRequired) {
+    // update spinner state
+    spinner.text =
+      'Build UI5... (this task can take several minutes, please be patient)'
+  }
 
   // define build Promise
-  return oSource.isPrebuild === false
-    ? buildUI5(`${sDownloadPath}/${sUI5Version}`, sUI5TargetPath, sUI5Version)
+  return isBuildRequired
+    ? buildUI5(
+        `${sDownloadPath}/${sUI5Version}`,
+        sUI5TargetPath,
+        sUI5Version,
+        oBuildOptions
+      )
+        .then(sSuccessMessage => {
+          spinner.success(sSuccessMessage)
+          spinner.start('')
+        })
+        .catch(sErrorMessage => {
+          spinner.fail(sErrorMessage)
+          spinner.start('')
+        })
     : Promise.resolve()
 }
 
@@ -298,6 +429,9 @@ function entry() {
 
 // [production build]
 function entryDist() {
+  // update spinner state
+  spinner.text = 'Compiling project resources...'
+
   return (
     gulp
       .src(paths.entry.src)
@@ -472,6 +606,9 @@ function stylesDist() {
 
 // [production build]
 function ui5preloads() {
+  // update spinner state
+  spinner.text = 'Bundling modules...'
+
   const aPreloadPromise = pkg.ui5.apps.map(oApp => {
     const sDistAppPath = oApp.path.replace(new RegExp(`^${SRC}`), DIST)
     return new Promise(function(resolve, reject) {
@@ -506,6 +643,9 @@ function ui5preloads() {
 
 // [production build]
 function ui5cacheBust(done) {
+  // update spinner state
+  spinner.text = 'Run cache buster...'
+
   return (
     gulp
       .src(paths.cacheBuster.src)

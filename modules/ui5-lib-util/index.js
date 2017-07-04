@@ -13,16 +13,16 @@
  */
 
 import gulp from 'gulp'
-import download from 'gulp-download'
-import unzip from 'gulp-unzip'
 import gulpif from 'gulp-if'
 import rename from 'gulp-rename'
 import tap from 'gulp-tap'
 import uglify from 'gulp-uglify'
 import cleanCSS from 'gulp-clean-css'
-import gutil from 'gulp-util'
 import ui5preload from 'gulp-ui5-preload'
 import lessOpenUI5 from 'less-openui5'
+import request from 'request'
+import progress from 'request-progress'
+import Zip from 'adm-zip'
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
@@ -36,108 +36,128 @@ export { downloadUI5, buildUI5 }
 /**
  * Download OpenUI5 repository from external URL and unzip.
  *
- * @param {sDownloadURL} [string] Download URL of required archive.
- * @param {sDownloadPath} [string] Destination path for the download archive and extracted files.
- * @param {sUI5Version} [string] Version number of UI5 to create at <code>sDownloadPath</code> a subdirectory named <code>/{{sUI5Version}}</code>.
- * @returns {Promise} Promise without return value.
+ * @param {string} [sDownloadURL] Download URL of required archive.
+ * @param {string} [sDownloadPath] Destination path for the download archive and extracted files.
+ * @param {string} [sUI5Version] Version number of UI5 to create at <code>sDownloadPath</code> a subdirectory named <code>/{{sUI5Version}}</code>.
+ * @param {Object} [oOptions] Download options.
+ * @param {function(number,number,{ name: string, progress: number|null}):void} [oOptions.onProgress] Callback function to track download progress taking as params: current step number, total step number and if available, step details (object with name and progress in percent).
+ * @returns {Promise.string} Promise which resolves to a success or error message.
  */
-function downloadUI5(sDownloadURL, sDownloadPath, sUI5Version) {
+function downloadUI5(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
   // check params
   if (!sDownloadURL) {
-    gutil.log('gulp-lib-util', gutil.colors.red('No download URL provided'))
+    return Promise.reject('No download URL provided')
   }
   if (!sDownloadPath) {
-    gutil.log('gulp-lib-util', gutil.colors.red('No download path provided'))
+    return Promise.reject('No download path provided')
   }
   if (!sUI5Version) {
-    gutil.log('gulp-lib-util', gutil.colors.red('No UI5 version provided'))
+    return Promise.reject('No UI5 version provided')
   }
 
-  // timestamps
-  let iTimestamp = Date.now()
-
-  // start download
-  logStart(`download UI5 ${sUI5Version}`, [
-    '(unzip could take a couple of minutes, so please be patient after download)'
-  ])
+  const oSteps = {
+    download: {
+      number: 1,
+      details: { name: 'download' }
+    },
+    unzip: {
+      number: 2,
+      details: { name: 'unzip' }
+    }
+  }
+  const iTotalSteps = Object.keys(oSteps).length
+  const sTargetPath = `${sDownloadPath}/${sUI5Version}`
+  const sSuccessMessage = `UI5 download (${sUI5Version}) already exist at ${sDownloadPath}/${sUI5Version}`
+  const fnProgressCallback =
+    typeof oOptions.onProgress === 'function' ? oOptions.onProgress : () => {}
 
   // check if ui5 library was already downloaded and ectracted
-  if (!fs.existsSync(`${sDownloadPath}/${sUI5Version}`)) {
-    // download and unzip sources
-    return new Promise(resolve => {
-      download(sDownloadURL)
-        .pipe(unzip())
-        .pipe(gulp.dest(`${sDownloadPath}/${sUI5Version}`))
-        .on('end', () => {
-          // log finished msg
-          logEnd(`download UI5 ${sUI5Version}`, iTimestamp, [
-            '(download available at',
-            gutil.colors.cyan(`${sDownloadPath}/${sUI5Version}`),
-            ')'
-          ])
-          resolve()
-        })
-    })
-  }
+  return fs.existsSync(sTargetPath)
+    ? // download is already available
+      Promise.resolve(sSuccessMessage)
+    : // download and unzip sources
+      new Promise((resolve, reject) => {
+        progress(
+          request.get(
+            sDownloadURL,
+            { encoding: null },
+            (oError, oResponse, oData) => {
+              if (oError) {
+                // reject promise
+                return reject(oError)
+              }
 
-  // download is already available
-  logEnd(`download UI5 ${sUI5Version}`, iTimestamp, [
-    '(directory',
-    gutil.colors.cyan(`${sDownloadPath}/${sUI5Version}`),
-    'already exist)'
-  ])
-  return Promise.resolve()
+              // update progress information (start step 2)
+              const oStep = oSteps['unzip']
+              fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
+              // Do something after request finishes
+              const oBuffer = new Buffer(oData, 'binary')
+              const zip = new Zip(oBuffer)
+              const overwrite = true
+
+              // extracts everything
+              zip.extractAllTo(sTargetPath, overwrite)
+
+              // resolve promise
+              return resolve(`UI5 download successful: ${sTargetPath}`)
+            }
+          )
+        ).on('progress', oProgressDetails => {
+          // update progress information
+          const oStep = oSteps['download']
+          fnProgressCallback(oStep.number, iTotalSteps, {
+            ...oStep.details,
+            progress: oProgressDetails.percent * 100
+          })
+        })
+      })
 }
 
 /**
  * Use PulseShifts own build tools to build OpenUI5 library.
  *
- * @param {sUI5SrcPath} [string] Source path of the OpenUI5 source code..
- * @param {sUI5TargetPath} [string] Destination path for the build library.
- * @param {sUI5Version} [string] Version number of UI5 to create at <code>sUI5TargetPath</code> a subdirectory named <code>/{{sUI5Version}}</code>.
- * @returns {Promise} Promise without return value.
+ * @param {string} [sUI5SrcPath] Source path of the OpenUI5 source code..
+ * @param {string} [sUI5TargetPath] Destination path for the build library.
+ * @param {string} [sUI5Version] Version number of UI5 to create at <code>sUI5TargetPath</code> a subdirectory named <code>/{{sUI5Version}}</code>.
+ * @param {Object} [oOptions] Build options.
+ * @param {function(number,number,{ name: string, progress: number|null}):void} [oOptions.onProgress] Callback function to track build progress taking as params: current step number, total step number and if available, step details (object with name and progress in percent).
+ * @returns {Promise.string} Promise which resolves to a success or error message.
  */
-function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
+function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
   // check params
   if (!sUI5SrcPath) {
-    gutil.log('gulp-lib-util', gutil.colors.red('No UI5 source path provided'))
+    return Promise.reject('No UI5 source path provided')
   }
   if (!fs.existsSync(sUI5SrcPath)) {
-    gutil.log(
-      'gulp-lib-util',
-      gutil.colors.red(`UI5 source path ${sUI5SrcPath} does not eist`)
-    )
+    return Promise.reject(`UI5 source path ${sUI5SrcPath} does not eist`)
   }
   if (!sUI5TargetPath) {
-    gutil.log('gulp-lib-util', gutil.colors.red('No UI5 target path provided'))
+    return Promise.reject('No UI5 target path provided')
   }
   if (!sUI5Version) {
-    gutil.log('gulp-lib-util', gutil.colors.red('No UI5 version provided'))
+    return Promise.reject('No UI5 version provided')
   }
 
   // if ui5 target location already exist, cancel to prevent unwanted overrides
   if (fs.existsSync(sUI5TargetPath)) {
-    gutil.log(
-      'UI5 target directory',
-      gutil.colors.cyan(sUI5TargetPath),
-      'already exist. Please clean target location for rebuild (directory will be created automatically).'
+    return Promise.resolve(
+      `UI5 target directory ${sUI5TargetPath} already exist. Please clean target location for rebuild (directory will be created automatically).`
     )
-    return Promise.resolve()
   }
 
   const isSrcInDownloadRoot = fs.existsSync(`${sUI5SrcPath}/src`)
   const isSrcInDownloadSubDir = fs
     .readdirSync(sUI5SrcPath)
     .some(sPath => fs.existsSync(`${path.join(sUI5SrcPath, sPath)}/src`))
+  const fnProgressCallback =
+    typeof oOptions.onProgress === 'function' ? oOptions.onProgress : () => {}
 
   // cancel if UI5 source code location ('/src' directory) could not be found
   if (!isSrcInDownloadRoot && !isSrcInDownloadSubDir) {
-    gutil.log(
-      'UI5 source code not found in given directory',
-      gutil.colors.cyan(sUI5SrcPath),
-      ', please check if the given path contains the correct OpenUI5 source code structure.'
+    return Promise.reject(
+      `UI5 source code not found in given directory ${sUI5SrcPath}, please check if the given path contains the correct OpenUI5 source code structure.`
     )
-    return Promise.resolve()
   }
 
   // update UI5 source path if '/src' directory was found in a sub directory
@@ -153,8 +173,55 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
       )
   }
 
+  // define steps for progress information
+  const oSteps = {
+    'read modules': { number: 1, details: { name: 'read modules' } },
+    'copy debug resources': {
+      number: 2,
+      details: { name: 'copy debug scripts' }
+    },
+    'copy minified scripts and other resources': {
+      number: 3,
+      details: { name: 'minify scripts and copy resources' }
+    },
+    'compose sap-ui-*.js resources': {
+      number: 4,
+      details: { name: 'compose sap-ui-*.js resources' }
+    },
+    'bundle modules': {
+      number: 5,
+      details: { name: 'bundle modules' }
+    },
+    'copy themes': {
+      number: 6,
+      details: { name: 'copy themes' }
+    },
+    'compile themes': {
+      number: 7,
+      details: { name: 'compile themes' }
+    },
+    'post-process CSS': {
+      number: 8,
+      details: { name: 'minify CSS' }
+    },
+    'compose sap-ui-version.json': {
+      number: 9,
+      details: { name: 'compose sap-ui-version.json' }
+    }
+  }
+  const iTotalSteps = Object.keys(oSteps).length
+
+  // initialize build time
   const NOW = new Date()
-  const sBuildTime = [NOW.toDateString(), NOW.toTimeString()].join(' - ')
+  const sBuildTime = NOW.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: 'numeric'
+  })
 
   const sCopyrightBanner = `UI development toolkit for HTML5 (OpenUI5)
  * (c) Copyright 2009-2017 SAP SE or an SAP affiliate company.
@@ -175,16 +242,19 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
   // found UI5 themes
   let aUI5Themes = []
 
-  // task start timestamps
-  let oStartTimes = {}
-
   // 1. collect all module and theme paths of OpenUI5 project
-  const oBuildPromiseChain = new Promise((resolve, reject) =>
-    fs.readdir(
+  const oBuildPromiseChain = new Promise((resolve, reject) => {
+    // update progress information
+    const oStep = oSteps['read modules']
+    fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
+    // read all directories in 'src'
+    return fs.readdir(
       `${sUI5SrcPath}/src/`,
+      // TODO: add error message
       (oError, aPaths) => (oError ? reject() : resolve(aPaths))
     )
-  )
+  })
     .then((aPaths = []) => {
       // extract modules
       aUI5Modules = aPaths
@@ -219,8 +289,10 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     .then(
       () =>
         new Promise((resolve, reject) => {
-          logStart('copy debug resources')
-          oStartTimes['copy debug resources'] = Date.now()
+          // update progress information
+          const oStep = oSteps['copy debug resources']
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
           return (
             gulp
               .src([
@@ -238,13 +310,7 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', () => {
-                logEnd(
-                  'copy debug resources',
-                  oStartTimes['copy debug resources']
-                )
-                resolve()
-              })
+              .on('end', resolve)
               .on('error', reject)
           )
         })
@@ -253,15 +319,18 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     .then(
       () =>
         new Promise((resolve, reject) => {
-          logStart('copy minified JS and all other resources')
-          oStartTimes['copy minified JS and all other resources'] = Date.now()
+          // update progress information
+          const oStep = oSteps['copy minified scripts and other resources']
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
           return (
             gulp
               .src([
                 `${sUI5SrcPath}/LICENSE.txt`,
                 `${sUI5SrcPath}/NOTICE.txt`,
                 `${sUI5SrcPath}/README.md`,
-                ...aUI5Modules.map(oModule => `${oModule.path}/src/**/*`) // module files
+                // module files
+                ...aUI5Modules.map(oModule => `${oModule.path}/src/**/*`)
               ])
               // minify all JS resources
               .pipe(gulpif('**/*.js', uglify()))
@@ -278,13 +347,7 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', () => {
-                logEnd(
-                  'copy minified JS and all other resources',
-                  oStartTimes['copy minified JS and all other resources']
-                )
-                resolve()
-              })
+              .on('end', resolve)
               .on('error', reject)
           )
         })
@@ -293,8 +356,10 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     .then(
       () =>
         new Promise((resolve, reject) => {
-          logStart('compose sap-ui-*.js resources')
-          oStartTimes['compose sap-ui-*.js resources'] = Date.now()
+          // update progress information
+          const oStep = oSteps['compose sap-ui-*.js resources']
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
           return (
             gulp
               .src([
@@ -358,20 +423,18 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
               .pipe(tap(oFile => composeSAPUiCore(oFile)))
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', () => {
-                logEnd(
-                  'compose sap-ui-*.js resources',
-                  oStartTimes['compose sap-ui-*.js resources']
-                )
-                resolve()
-              })
+              .on('end', resolve)
               .on('error', reject)
           )
         })
     )
     // 5. create preload bundle files for all modules (except sap.ui.core, because guess why: it has special requirements) and save them at target directory
-    .then(() =>
-      Promise.all(
+    .then(() => {
+      // update progress information
+      const oStep = oSteps['bundle modules']
+      fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
+      return Promise.all(
         aUI5Modules.filter(oModule => oModule.name !== 'sap.ui.core').map(
           oModule =>
             new Promise((resolve, reject) =>
@@ -413,7 +476,7 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
             ) // end Promise
         )
       )
-    ) // end Promise.all
+    }) // end Promise.all
     // 6. now create preload bundle files sap.ui.core, too
     .then(
       () =>
@@ -463,8 +526,10 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     .then(
       () =>
         new Promise((resolve, reject) => {
-          logStart('copy themes')
-          oStartTimes['copy themes'] = Date.now()
+          // update progress information
+          const oStep = oSteps['copy themes']
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
           return (
             gulp
               .src([
@@ -500,10 +565,7 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', () => {
-                logEnd('copy themes', oStartTimes['copy themes'])
-                resolve()
-              })
+              .on('end', resolve)
               .on('error', reject)
           )
         })
@@ -512,11 +574,10 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     .then(
       () =>
         new Promise((resolve, reject) => {
-          logStart('compile themes')
-          oStartTimes['compile themes'] = Date.now()
-          gutil.log(
-            "'File not found' errors are fixed automatically, therefore, they can be ignored."
-          )
+          // update progress information
+          const oStep = oSteps['compile themes']
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
           return (
             gulp
               .src([`${sUI5TargetPath}/**/themes/**/library.source.less`])
@@ -529,10 +590,7 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', () => {
-                logEnd('compile themes', oStartTimes['compile themes'])
-                resolve()
-              })
+              .on('end', resolve)
               .on('error', reject)
           )
         })
@@ -541,8 +599,10 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     .then(
       () =>
         new Promise((resolve, reject) => {
-          logStart('postprocess CSS')
-          oStartTimes['postprocess CSS'] = Date.now()
+          // update progress information
+          const oStep = oSteps['post-process CSS']
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
           return (
             gulp
               .src([`${sUI5TargetPath}/**/*.css`])
@@ -555,10 +615,7 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', () => {
-                logEnd('postprocess CSS', oStartTimes['postprocess CSS'])
-                resolve()
-              })
+              .on('end', resolve)
               .on('error', reject)
           )
         })
@@ -567,31 +624,28 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
     .then(
       () =>
         new Promise((resolve, reject) => {
-          logStart('compose sap-ui-version.json')
-          oStartTimes['compose sap-ui-version.json'] = Date.now()
+          // update progress information
+          const oStep = oSteps['compose sap-ui-version.json']
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+
+          const oVersionJSON = {
+            buildTimestamp: sBuildTime,
+            name: 'openui5-sdk-dist-pulseshift-custom',
+            version: sUI5Version,
+            librares: aUI5Modules.map(oModule => ({
+              buildTimestamp: sBuildTime,
+              name: oModule.name,
+              version: sUI5Version
+            }))
+          }
+          const sVersionJSONString = JSON.stringify(oVersionJSON, null, 2)
+          const sSuccessMessage = `UI5 build successful: ${sUI5Version}`
+
+          // write JSON file
           fs.writeFile(
             `${sUI5TargetPath}/sap-ui-version.json`,
-            JSON.stringify(
-              {
-                buildTimestamp: sBuildTime,
-                name: 'openui5-sdk-dist-pulseshift-custom',
-                version: sUI5Version,
-                librares: aUI5Modules.map(oModule => ({
-                  buildTimestamp: sBuildTime,
-                  name: oModule.name,
-                  version: sUI5Version
-                }))
-              },
-              null,
-              2
-            ),
-            oError => {
-              logEnd(
-                'compose sap-ui-version.json',
-                oStartTimes['compose sap-ui-version.json']
-              )
-              return oError ? reject() : resolve()
-            }
+            sVersionJSONString,
+            oError => (oError ? reject() : resolve(sSuccessMessage))
           )
         })
     )
@@ -601,34 +655,11 @@ function buildUI5(sUI5SrcPath, sUI5TargetPath, sUI5Version) {
 }
 
 /**
- * Log a gulp like 'task starting' message.
+ * Compile library.source.less and dependencies to library.css.
  *
- * @param {sTaskName} [string] Task name to create following result pattern <code>Starting {{sTaskName}} ...</code>.
- * @param {aPostLogs} [Array] Additional strings pasted as parameters to <code>gulp-util.log</code>.
+ * @param {Vinyl} [oFile] Vinyl file object of library-preload.json.
+ * @returns {Vinyl} Transformed library-preload.json.
  */
-function logStart(sTaskName = '', aPostLogs = []) {
-  gutil.log('Starting', gutil.colors.cyan(sTaskName), '...', ...aPostLogs)
-}
-
-/**
- * Log a gulp like 'task finished' message.
- *
- * @param {sTaskName} [string] Task name to create following result pattern <code>Finished {{sTaskName}} after 4s</code>.
- * @param {iTimestampStart} [number] Timestamp of task start time as UTC time in ms.
- * @param {aPostLogs} [Array] Additional strings pasted as parameters to <code>gulp-util.log</code>.
- */
-function logEnd(sTaskName = '', iTimestampStart = Date.now(), aPostLogs = []) {
-  gutil.log(
-    'Finished',
-    gutil.colors.cyan(sTaskName),
-    'after',
-    gutil.colors.magenta(
-      `${Math.round((Date.now() - iTimestampStart) / 100) / 10} s`
-    ),
-    ...aPostLogs
-  )
-}
-
 function compileUI5LessLib(oFile) {
   const sDestDir = path.dirname(oFile.path)
   const sFileName = oFile.path.split('/').pop()
@@ -677,7 +708,7 @@ function compileUI5LessLib(oFile) {
 
       if (!isIssueFixed) {
         // if this error message raises up, the build failed due to the other 1% cases
-        gutil.log(gutil.colors.red('Compile UI5 less lib: '), oError.message)
+        return Promise.reject('Compile UI5 less lib: ')
       }
 
       // if missing file could be created, try theme build again
@@ -721,6 +752,7 @@ function compileUI5LessLib(oFile) {
     .then(() => {
       // clear builder cache when finished to cleanup memory
       builder.clearCache()
+      return Promise.resolve()
     })
 
   return oBuildThemePromise
@@ -729,7 +761,7 @@ function compileUI5LessLib(oFile) {
 /**
  * Transform library-preload.json content.
  *
- * @param {oFile} [Vinyl] Vinyl file object of library-preload.json.
+ * @param {Vinyl} [oFile] Vinyl file object of library-preload.json.
  * @returns {Vinyl} Transformed library-preload.json.
  */
 function transformPreloadJSON(oFile) {
@@ -757,7 +789,7 @@ function replaceFilePlaceholders(oFile, aReplacementRules) {
 /**
  * Compose sap-ui-*.js files.
  *
- * @param {oFile} [Vinyl] Vinyl file object sap-ui-*.js.
+ * @param {Vinyl} [oFile] Vinyl file object sap-ui-*.js.
  * @returns {Vinyl} Composed sap-ui-*.js file.
  */
 function composeSAPUiCore(oFile) {
