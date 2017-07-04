@@ -1,14 +1,17 @@
 {
   "name": "openui5-gulp-starter-kit",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "OpenUI5 template app build with gulp.",
   "scripts": {
-    "start": "gulp",
-    "build": "gulp build",
+    "start": "gulp --silent",
+    "build": "gulp build --silent",
     "precommit": "lint-staged"
   },
   "lint-staged": {
-    "*.js": ["prettier --write --no-semi --single-quote", "git add"]
+    "*.js": [
+      "prettier --write --no-semi --single-quote",
+      "git add"
+    ]
   },
   "repository": {
     "url": "git+https://github.com/pulseshift/openui5-gulp-starter-kit.git",
@@ -23,10 +26,10 @@
     "url": "https://github.com/pulseshift/openui5-gulp-starter-kit/issues"
   },
   "homepage": "https://github.com/pulseshift/openui5-gulp-starter-kit#readme",
-  "main": "src/index.handlebars",
+  "main": "src/index.hbs",
   "ui5": {
     "indexTitle": "UI5 Todo App",
-    "src": "cdn",
+    "src": "githubMaster",
     "srcLinks": {
       "githubRelease": {
         "url": "https://github.com/SAP/openui5/archive/{{version}}.zip",
@@ -36,7 +39,7 @@
       },
       "githubMaster": {
         "url": "https://github.com/SAP/openui5/archive/master.zip",
-        "version": "1.49.0",
+        "version": "1.49.0-SNAPSHOT",
         "isPrebuild": false,
         "isArchive": true
       },
@@ -67,18 +70,19 @@
     ]
   },
   "devDependencies": {
+    "adm-zip": "^0.4.7",
     "babel-cli": "^6.24.1",
     "babel-preset-env": "^1.5.2",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "babel-register": "^6.24.1",
     "browser-sync": "^2.18.12",
+    "commander": "^2.10.0",
     "del": "^3.0.0",
     "gulp": "gulpjs/gulp#4.0",
     "gulp-babel": "^6.1.2",
     "gulp-clean-css": "^3.4.2",
     "gulp-cli": "^1.3.0",
-    "gulp-download": "fuchsvomwalde/gulp-download",
     "gulp-handlebars-html": "^0.0.2",
     "gulp-htmlmin": "^3.0.0",
     "gulp-if": "^2.0.2",
@@ -91,18 +95,17 @@
     "gulp-tap": "^1.0.1",
     "gulp-uglify": "^3.0.0",
     "gulp-ui5-preload": "^1.3.1",
-    "gulp-unzip": "^0.2.0",
     "gulp-util": "^3.0.8",
     "handlebars": "^4.0.10",
     "husky": "^0.14.1",
     "less": "^2.7.2",
-    "less-openui5": "^0.2.0",
+    "less-openui5": "^0.3.1",
     "less-plugin-autoprefix": "^1.5.1",
     "lint-staged": "^4.0.0",
     "loader-utils": "^1.1.0",
-    "prettier": "^1.5.1"
-  },
-  "dependencies": {
-    "less-openui5": "^0.3.1"
+    "ora": "^1.3.0",
+    "prettier": "^1.5.1",
+    "request": "^2.81.0",
+    "request-progress": "^3.0.0"
   }
 }
