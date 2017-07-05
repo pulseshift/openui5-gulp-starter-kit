@@ -40,6 +40,10 @@ import server from 'browser-sync'
 import handlebars from 'handlebars'
 import gulpHandlebars from 'gulp-handlebars-html'
 
+/*
+ * SETUP SCRIPT RUNTIME ENVIRONMENT
+ */
+
 // parse program commands
 commander.version(pkg.version).option('--silent').parse(process.argv)
 
@@ -97,16 +101,21 @@ const paths = {
  * @public
  */
 const start = gulp.series(
-  function startSpinner(done) {
-    spinner.print(' ')
-    spinner.start('Start development server...')
-    done()
-  },
+  logStart,
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), clean),
   gulp.parallel(entry, assets, scripts, styles),
   logStats,
   watch
 )
+
+// log start message and start spinner
+function logStart(done) {
+  spinner.print(' ')
+  spinner.start('Start development server...')
+  done()
+}
+
+// log start statistics and stop spinner
 function logStats(done) {
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
@@ -142,17 +151,22 @@ export default start
  * @public
  */
 const build = gulp.series(
-  function startSpinner(done) {
-    spinner.print(' ')
-    spinner.start('Build start...')
-    done()
-  },
+  logStartDist,
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), cleanDist),
   gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
   ui5preloads,
   ui5cacheBust,
   logStatsDist
 )
+
+// log start build message and start spinner
+function logStartDist(done) {
+  spinner.print(' ')
+  spinner.start('Build start...')
+  done()
+}
+
+// log build statistics and stop spinner
 function logStatsDist(done) {
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
@@ -642,7 +656,7 @@ function ui5preloads() {
  * ----------------------------------------------------------- */
 
 // [production build]
-function ui5cacheBust(done) {
+function ui5cacheBust() {
   // update spinner state
   spinner.text = 'Run cache buster...'
 
