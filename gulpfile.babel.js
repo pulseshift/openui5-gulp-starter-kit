@@ -28,8 +28,8 @@ import less from 'gulp-less'
 import tap from 'gulp-tap'
 import sourcemaps from 'gulp-sourcemaps'
 import ui5preload from 'gulp-ui5-preload'
-import ui5Bust from './modules/ui5-cache-buster'
-import { downloadUI5, buildUI5 } from './modules/ui5-lib-util'
+import ui5Bust from 'ui5-cache-buster'
+import { ui5Download, ui5Build } from 'ui5-lib-util'
 import LessAutoprefix from 'less-plugin-autoprefix'
 import ora from 'ora'
 import del from 'del'
@@ -300,7 +300,7 @@ export function downloadOpenUI5() {
 
   // return promise
   return isDownloadRequired
-    ? downloadUI5(sCompiledURL, sDownloadPath, sUI5Version, oDownloadOptions)
+    ? ui5Download(sCompiledURL, sDownloadPath, sUI5Version, oDownloadOptions)
         .then(sSuccessMessage => {
           spinner.success(sSuccessMessage)
           spinner.start('')
@@ -339,7 +339,7 @@ export function buildOpenUI5() {
 
   // define build Promise
   return isBuildRequired
-    ? buildUI5(
+    ? ui5Build(
         `${sDownloadPath}/${sUI5Version}`,
         sUI5TargetPath,
         sUI5Version,

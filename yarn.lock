@@ -55,7 +55,7 @@ acorn@4.X:
   version "4.0.13"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-4.0.13.tgz#105495ae5361d697bd195c825192e1ad7f253787"
 
-adm-zip:
+adm-zip@^0.4.7:
   version "0.4.7"
   resolved "https://registry.yarnpkg.com/adm-zip/-/adm-zip-0.4.7.tgz#8606c2cbf1c426ce8c8ec00174447fd49b6eafc1"
 
@@ -1314,6 +1314,12 @@ clean-css@4.1.4, clean-css@4.1.x:
   dependencies:
     source-map "0.5.x"
 
+clean-css@4.1.5:
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/clean-css/-/clean-css-4.1.5.tgz#d09a87a02a5375117589796ae76a063cacdb541a"
+  dependencies:
+    source-map "0.5.x"
+
 cli-cursor@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/cli-cursor/-/cli-cursor-1.0.2.tgz#64da3f7d56a54412e59794bd62dc35295e8f2987"
@@ -2490,6 +2496,15 @@ gulp-clean-css:
     through2 "2.0.3"
     vinyl-sourcemaps-apply "0.2.1"
 
+gulp-clean-css@^3.4.2:
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/gulp-clean-css/-/gulp-clean-css-3.5.0.tgz#d43e747c41957995ec49bb9612f862b64329f1b0"
+  dependencies:
+    clean-css "4.1.5"
+    gulp-util "3.0.8"
+    through2 "2.0.3"
+    vinyl-sourcemaps-apply "0.2.1"
+
 gulp-cli, gulp-cli@^1.0.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/gulp-cli/-/gulp-cli-1.3.0.tgz#a6bfbb8be35341be290ae45cd3e401071216edd4"
@@ -2540,7 +2555,7 @@ gulp-htmlmin:
     readable-stream "^2.0.2"
     tryit "^1.0.1"
 
-gulp-if:
+gulp-if, gulp-if@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/gulp-if/-/gulp-if-2.0.2.tgz#a497b7e7573005041caa2bc8b7dda3c80444d629"
   dependencies:
@@ -2597,7 +2612,7 @@ gulp-pretty-data:
     pretty-data "~0.40.0"
     through2 "^0.6.1"
 
-gulp-rename, gulp-rename@^1.2.0:
+gulp-rename, gulp-rename@^1.2.0, gulp-rename@^1.2.2:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/gulp-rename/-/gulp-rename-1.2.2.tgz#3ad4428763f05e2764dec1c67d868db275687817"
 
@@ -2628,13 +2643,13 @@ gulp-sourcemaps@1.6.0:
     through2 "^2.0.0"
     vinyl "^1.0.0"
 
-gulp-tap:
+gulp-tap, gulp-tap@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/gulp-tap/-/gulp-tap-1.0.1.tgz#e671124e1259b4cea219ed1ca97b7f585c334690"
   dependencies:
     through2 "^2.0.3"
 
-gulp-uglify:
+gulp-uglify, gulp-uglify@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/gulp-uglify/-/gulp-uglify-3.0.0.tgz#0df0331d72a0d302e3e37e109485dddf33c6d1ca"
   dependencies:
@@ -2646,14 +2661,14 @@ gulp-uglify:
     uglify-js "^3.0.5"
     vinyl-sourcemaps-apply "^0.2.0"
 
-gulp-ui5-preload:
+gulp-ui5-preload, gulp-ui5-preload@^1.3.1:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/gulp-ui5-preload/-/gulp-ui5-preload-1.3.1.tgz#6f565084ac128f3776dad1b7d86990bd5a3d7f42"
   dependencies:
     gulp-util "^3.0.1"
     through2 "^0.6.3"
 
-gulp-util, gulp-util@^3, gulp-util@^3.0.0, gulp-util@^3.0.1, gulp-util@^3.0.7, gulp-util@~3.0.0, gulp-util@3.0.8:
+gulp-util, gulp-util@^3, gulp-util@^3.0.0, gulp-util@^3.0.1, gulp-util@^3.0.7, gulp-util@^3.0.8, gulp-util@~3.0.0, gulp-util@3.0.8:
   version "3.0.8"
   resolved "https://registry.yarnpkg.com/gulp-util/-/gulp-util-3.0.8.tgz#0054e1e744502e27c04c187c3ecc505dd54bbb4f"
   dependencies:
@@ -2689,7 +2704,7 @@ gulp-util@~2.2.10:
     through2 "^0.5.0"
     vinyl "^0.2.1"
 
-gulp@gulpjs/gulp#4.0:
+"gulp@github:gulpjs/gulp#4.0", gulp@gulpjs/gulp#4.0:
   version "4.0.0-alpha.2"
   resolved "https://codeload.github.com/gulpjs/gulp/tar.gz/38246c3f8b6dbb8d4ef657183e92d90c8299e22f"
   dependencies:
@@ -3385,7 +3400,7 @@ less, "less@2.6.x || ^2.7.1":
     request "^2.72.0"
     source-map "^0.5.3"
 
-less-openui5:
+less-openui5@^0.3.1:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/less-openui5/-/less-openui5-0.3.1.tgz#731b98c60b79129c2137a851309d316859396be7"
   dependencies:
@@ -3500,7 +3515,7 @@ load-json-file@^1.0.0:
     pinkie-promise "^2.0.0"
     strip-bom "^2.0.0"
 
-loader-utils:
+loader-utils@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/loader-utils/-/loader-utils-1.1.0.tgz#c98aef488bcceda2ffb5e2de646d6a754429f5cd"
   dependencies:
@@ -4714,7 +4729,13 @@ replace-ext@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/replace-ext/-/replace-ext-0.0.1.tgz#29bbd92078a739f0bcce2b4ee41e837953522924"
 
-request, request@^2.72.0, request@^2.81.0, request@>=2.12.0:
+request-progress@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/request-progress/-/request-progress-3.0.0.tgz#4ca754081c7fec63f505e4faa825aa06cd669dbe"
+  dependencies:
+    throttleit "^1.0.0"
+
+request@^2.72.0, request@^2.81.0, request@>=2.12.0:
   version "2.81.0"
   resolved "https://registry.yarnpkg.com/request/-/request-2.81.0.tgz#c6928946a0e06c5f8d6f8a9333469ffda46298a0"
   dependencies:
@@ -4740,12 +4761,6 @@ request, request@^2.72.0, request@^2.81.0, request@>=2.12.0:
     tough-cookie "~2.3.0"
     tunnel-agent "^0.6.0"
     uuid "^3.0.0"
-
-request-progress:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/request-progress/-/request-progress-3.0.0.tgz#4ca754081c7fec63f505e4faa825aa06cd669dbe"
-  dependencies:
-    throttleit "^1.0.0"
 
 request@2.78.0:
   version "2.78.0"
@@ -5456,6 +5471,29 @@ uglify-js@^3.0.5, uglify-js@3.0.x:
 uglify-to-browserify@~1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/uglify-to-browserify/-/uglify-to-browserify-1.0.2.tgz#6e0924d6bda6b5afe349e39a6d632850a0f882b7"
+
+ui5-cache-buster@alpha:
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/ui5-cache-buster/-/ui5-cache-buster-0.0.7.tgz#15ce6ea727830661fa2661d701b93225a7ae1c98"
+  dependencies:
+    gulp-util "^3.0.8"
+    loader-utils "^1.1.0"
+
+ui5-lib-util@alpha:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/ui5-lib-util/-/ui5-lib-util-0.0.5.tgz#12a7869be36bfd96085e1503a4944f53cd48f62e"
+  dependencies:
+    adm-zip "^0.4.7"
+    gulp gulpjs/gulp#4.0
+    gulp-clean-css "^3.4.2"
+    gulp-if "^2.0.2"
+    gulp-rename "^1.2.2"
+    gulp-tap "^1.0.1"
+    gulp-uglify "^3.0.0"
+    gulp-ui5-preload "^1.3.1"
+    less-openui5 "^0.3.1"
+    request "^2.81.0"
+    request-progress "^3.0.0"
 
 uid-number@^0.0.6:
   version "0.0.6"
