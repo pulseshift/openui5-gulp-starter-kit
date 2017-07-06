@@ -1,6 +1,6 @@
 {
   "name": "openui5-gulp-starter-kit",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "OpenUI5 template app build with gulp.",
   "scripts": {
     "start": "gulp --silent",
@@ -70,7 +70,6 @@
     ]
   },
   "devDependencies": {
-    "adm-zip": "^0.4.7",
     "babel-cli": "^6.24.1",
     "babel-preset-env": "^1.5.2",
     "babel-preset-es2015": "^6.24.1",
@@ -99,13 +98,15 @@
     "handlebars": "^4.0.10",
     "husky": "^0.14.1",
     "less": "^2.7.2",
-    "less-openui5": "^0.3.1",
     "less-plugin-autoprefix": "^1.5.1",
     "lint-staged": "^4.0.0",
-    "loader-utils": "^1.1.0",
     "ora": "^1.3.0",
     "prettier": "^1.5.1",
-    "request": "^2.81.0",
-    "request-progress": "^3.0.0"
+    "ui5-cache-buster": "alpha",
+    "ui5-lib-util": "alpha"
+  },
+  "dependencies": {
+    "ui5-cache-buster": "alpha",
+    "ui5-lib-util": "alpha"
   }
 }
