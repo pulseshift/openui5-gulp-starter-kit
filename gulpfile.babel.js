@@ -302,7 +302,7 @@ export function downloadOpenUI5() {
   return isDownloadRequired
     ? ui5Download(sCompiledURL, sDownloadPath, sUI5Version, oDownloadOptions)
         .then(sSuccessMessage => {
-          spinner.success(sSuccessMessage)
+          spinner.succeed(sSuccessMessage)
           spinner.start('')
         })
         .catch(sErrorMessage => {
@@ -346,7 +346,7 @@ export function buildOpenUI5() {
         oBuildOptions
       )
         .then(sSuccessMessage => {
-          spinner.success(sSuccessMessage)
+          spinner.succeed(sSuccessMessage)
           spinner.start('')
         })
         .catch(sErrorMessage => {
