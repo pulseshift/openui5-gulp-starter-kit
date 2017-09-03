@@ -5,7 +5,7 @@ sap.ui.define(
     'sap/m/MessageBox',
     'sap/ui/Device'
   ],
-  function(UIComponent, models, rootReducer, MessageBox, Device) {
+  function(UIComponent, models, MessageBox, Device) {
     return UIComponent.extend('app.todo.Component', {
       metadata: {
         manifest: 'json'
