@@ -1,6 +1,12 @@
 ### macOS ###
 *.DS_Store
 
+### IDE (Atom/Webstorm/etc) ###
+/.imdone/
+/.idea/
+/.settings/
+/.vscode/
+
 ### Build Process ###
 /dist/
 /ui5/
