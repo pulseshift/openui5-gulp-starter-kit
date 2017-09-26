@@ -46,6 +46,7 @@ The app should open in your browser automatically, otherwise open: `http://local
 | Production ready builds                     | Pre-configured build pipeline to create optimized assets, UI5 pre-loads etc. just as you would expect from a state of the art build process.                                                                                                                                               |
 | ⚡️ Reliable UI5 Cache-Buster                     | Ensure your users are always enjoying the latest version of your app. OpenUI5 provides only [solutions proprietary for SAP Gateway and SAP Cloud Platform](https://openui5.hana.ondemand.com/#docs/guide/91f080966f4d1014b6dd926db0e91070.html). In this project, we added a more reliable mechanism that is open source and available for any environment. But much more important, with our Gulp build script, it works right out of the box.                                                                                                                                              |
 | A Hackable UI5 Build Process                     | Define in your `package.json` the source of your OpenUI5 library. Supported options are online CDN link, download URL of a prebuild library or a GitHub release link of OpenUI5. In all cases, the build process will handle the download, unzip and OpenUI5 build task by its own. Lean back and wait relaxed.                                                                                                                                            |
+| Pre-configured linter (ESLint)                     | [ESLint](https://eslint.org) is a pluggable linting utility for JavaScript. It is pre-configured to work reliable and hand in hand with babel and prettier.                                                                                                                                           |
 
 <!-- | Code Linting               | JavaScript code linting is done using [ESLint](http://eslint.org) - a pluggable linter tool for identifying and reporting on patterns in JavaScript. Run `yarn test` to lint your repository.                                                                         | -->
 
@@ -77,7 +78,6 @@ Current idea backlog (unordered):
 - Build process for custom UI5 themes
 - Documentation generation via JSDoc
 - Optimized OpenUI5 library modules (containing only these controls you used)
-- Add ESLint best practice rule set for OpenUI5 compatible to prettier
 - I18N helper integration
 
 ### Credits
