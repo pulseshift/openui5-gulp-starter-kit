@@ -154,7 +154,7 @@ const build = gulp.series(
   logStartDist,
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), cleanDist),
   gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
-  ui5preloads,
+  gulp.parallel(ui5preloads, ui5LibPreloads),
   ui5cacheBust,
   logStatsDist
 )
@@ -184,7 +184,7 @@ function logStatsDist(done) {
     .succeed('Build successfull.')
     .print(' ')
     .print(`Build entry: ${pkg.main}`)
-    .print(`Build output: ${path.relative(__dirname, DIST)}`)
+    .print(`Build output: ${path.resolve(__dirname, DIST)}`)
     .print(' ')
     .print(`UI5 Version: ${sUI5Version} ${sUI5Details}`)
     .print(' ')
@@ -645,6 +645,57 @@ function ui5preloads() {
         )
         .on('error', reject)
         .pipe(gulp.dest(sDistAppPath))
+        .on('end', resolve)
+    })
+  })
+  return Promise.all(aPreloadPromise)
+}
+
+/* ----------------------------------------------------------- *
+ * bundle app resources in library-preload.js file
+ * ----------------------------------------------------------- */
+
+// [production build]
+function ui5LibPreloads() {
+  // update spinner state
+  spinner.text = 'Bundling modules...'
+
+  const aPreloadPromise = pkg.ui5.libraries.map(oLibrary => {
+    const sDistLibraryPath = oLibrary.path.replace(new RegExp(`^${SRC}`), DIST)
+    return new Promise(function(resolve, reject) {
+      gulp
+        .src([
+          // bundle all library resources
+          `${sDistLibraryPath}/**/*.js`,
+          `${sDistLibraryPath}/**/*.json`,
+          // don't bundle debug or peload resources
+          `!${sDistLibraryPath}/**/*-dbg.js`,
+          `!${sDistLibraryPath}/**/*-preload.js`
+        ])
+        .pipe(
+          ui5preload({
+            base: sDistLibraryPath,
+            namespace: oLibrary.name,
+            // if set to true a library-preload.json file is emitted
+            isLibrary: true
+          })
+        )
+        // transform all library-preload.json files into library-preload.js (mandatory since OpenUI5 1.40)
+        .pipe(
+          gulpif(
+            '**/library-preload.json',
+            tap(oFile => {
+              const oJSONRaw = oFile.contents.toString('utf8')
+              oFile.contents = new Buffer(
+                `jQuery.sap.registerPreloadedModules(${oJSONRaw});`
+              )
+              return oFile
+            })
+          )
+        )
+        .pipe(gulpif('**/library-preload.json', rename({ extname: '.js' })))
+        .on('error', reject)
+        .pipe(gulp.dest(sDistLibraryPath))
         .on('end', resolve)
     })
   })

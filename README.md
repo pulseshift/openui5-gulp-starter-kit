@@ -26,6 +26,8 @@ yarn start
 
 The app should open in your browser automatically, otherwise open: `http://localhost:3000`
 
+Info: To get a more detailed logging, just use `yarn start:verbose` instead.
+
 ## Overview
 
 *OpenUI5 Starter Kit* is an opinionated to-do app example as template for OpenUI5 web development. Containing a modern build infrastructure, tools and a set of best practices for building a great development experience and helping you to stay productive.
@@ -60,6 +62,8 @@ yarn build
 
 Afterwards, the production app build can be tested by run `yarn gulp testDist`. The app should open in your browser automatically, otherwise open: `http://localhost:3000`
 
+Info: To get a more detailed logging, just use `yarn build:verbose` instead.
+
 ### Contributing & Troubleshooting
 
 Contributions, questions and comments are all welcome and encouraged.
@@ -74,7 +78,7 @@ Current idea backlog (unordered):
 - Add a further project based on Webpack
 - Add Facebooks flow type system with help of vagrant to support Windows machines, too
 - Unit test and browser test framework
-- Build process for custom UI5 control libraries
+- Build process for custom UI5 control libraries [available as BETA]
 - Build process for custom UI5 themes
 - Documentation generation via JSDoc
 - Optimized OpenUI5 library modules (containing only these controls you used)
