@@ -103,7 +103,7 @@ const paths = {
 const start = gulp.series(
   logStart,
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), clean),
-  gulp.parallel(entry, assets, scripts, styles),
+  gulp.parallel(entry, assets, scripts, styles, ui5LibThemeBundle),
   logStats,
   watch
 )
@@ -153,7 +153,13 @@ export default start
 const build = gulp.series(
   logStartDist,
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), cleanDist),
-  gulp.parallel(entryDist, assetsDist, scriptsDist, stylesDist),
+  gulp.parallel(
+    entryDist,
+    assetsDist,
+    scriptsDist,
+    stylesDist,
+    ui5LibThemeBundleDist
+  ),
   gulp.parallel(ui5preloads, ui5LibPreloads),
   ui5cacheBust,
   logStatsDist
@@ -205,12 +211,16 @@ export { build }
 function watch() {
   const sSuccessMessage =
     '\u{1F64C}  (Server started, use Ctrl+C to stop and go back to the console...)'
+  const aWatchLibThemeSrc = pkg.ui5.libraries.map(
+    oLibrary => `${oLibrary.path}/**/*.less`
+  )
 
   // start watchers
   gulp.watch(paths.entry.src, gulp.series(entry, reload))
   gulp.watch(paths.assets.src, gulp.series(assets, reload))
   gulp.watch(paths.scripts.src, gulp.series(scripts, reload))
   gulp.watch(paths.styles.src, gulp.series(styles, reload))
+  gulp.watch(aWatchLibThemeSrc, gulp.series(ui5LibThemeBundle, reload))
 
   // start HTTP server
   server.init({
@@ -700,6 +710,133 @@ function ui5LibPreloads() {
     })
   })
   return Promise.all(aPreloadPromise)
+}
+
+/* ----------------------------------------------------------- *
+ * bundle theme styles in library.css file
+ * ----------------------------------------------------------- */
+
+// [development build]
+function ui5LibThemeBundle() {
+  const mapPathToDev = sPath => sPath.replace(new RegExp(`^${SRC}`), DEV)
+  const aSelectThemeLessFiles = pkg.ui5.libraries.map(
+    oLibrary => `${oLibrary.path}/**/*.less`
+  )
+  const aSelectLibrarySources = pkg.ui5.libraries.map(
+    oLibrary => `${mapPathToDev(oLibrary.path)}/**/library.source.less`
+  )
+
+  return new Promise((resolve, reject) => {
+    // 1. copy theme resources (assets) to DEV
+    gulp
+      .src(aSelectThemeLessFiles, {
+        base: SRC,
+        // filter out unchanged files between runs
+        since: gulp.lastRun(ui5LibThemeBundle)
+      })
+      // don't exit the running watcher task on errors
+      .pipe(plumber())
+      .pipe(gulp.dest(DEV))
+      .on('error', reject)
+      .on('end', resolve)
+  }).then(
+    () =>
+      new Promise((resolve, reject) => {
+        // 2. compile library.css
+        gulp
+          .src(aSelectLibrarySources, {
+            base: DEV,
+            read: true,
+            // filter out unchanged files between runs
+            since: gulp.lastRun(ui5LibThemeBundle)
+          })
+          // don't exit the running watcher task on errors
+          .pipe(plumber())
+          .pipe(
+            tap(oFile => {
+              ui5CompileLessLib(oFile)
+            })
+          )
+          .pipe(gulp.dest(DEV))
+          .on('error', reject)
+          .on('end', resolve)
+      })
+  )
+}
+
+// [production build]
+function ui5LibThemeBundleDist() {
+  const mapPathToDist = sPath => sPath.replace(new RegExp(`^${SRC}`), DIST)
+  const aSelectThemeLessFiles = pkg.ui5.libraries.map(
+    oLibrary => `${oLibrary.path}/**/*.less`
+  )
+  const aSelectLibrarySources = pkg.ui5.libraries.map(
+    oLibrary => `${mapPathToDist(oLibrary.path)}/**/library.source.less`
+  )
+  const aSelectLibraryBundles = pkg.ui5.libraries.reduce(
+    (aBundles, oLibrary) =>
+      aBundles.concat([
+        `${mapPathToDist(oLibrary.path)}/**/library.css`,
+        `${mapPathToDist(oLibrary.path)}/**/library-RTL.css`
+      ]),
+    []
+  )
+
+  return new Promise((resolve, reject) => {
+    // 1. copy theme resources (assets) to DEV
+    gulp
+      .src(aSelectThemeLessFiles, {
+        base: SRC,
+        // select only files that have changed since the last run
+        since: gulp.lastRun(ui5LibThemeBundleDist)
+      })
+      .pipe(gulp.dest(DIST))
+      .on('error', reject)
+      .on('end', resolve)
+  })
+    .then(
+      () =>
+        new Promise((resolve, reject) => {
+          // 2. compile library.css
+          gulp
+            .src(aSelectLibrarySources, {
+              read: true,
+              base: DIST,
+              // select only files that have changed since the last run
+              since: gulp.lastRun(ui5LibThemeBundleDist)
+            })
+            .pipe(
+              tap(oFile => {
+                ui5CompileLessLib(oFile)
+              })
+            )
+            .pipe(gulp.dest(DIST))
+            .on('error', reject)
+            .on('end', resolve)
+        })
+    )
+    .then(
+      () =>
+        new Promise((resolve, reject) =>
+          // 3. minify css after creation
+          gulp
+            .src(aSelectLibraryBundles, {
+              base: DIST,
+              // select only files that have changed since the last run
+              since: gulp.lastRun(ui5LibThemeBundleDist)
+            })
+            // minify CSS
+            .pipe(
+              cleanCSS({
+                inline: ['none'],
+                level: 2
+              })
+            )
+            .pipe(gulp.dest(DIST))
+            .on('end', resolve)
+            .on('error', reject)
+        )
+    )
 }
 
 /* ----------------------------------------------------------- *
