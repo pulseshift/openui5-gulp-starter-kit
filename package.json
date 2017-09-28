@@ -10,7 +10,10 @@
     "precommit": "lint-staged"
   },
   "lint-staged": {
-    "*.js": ["prettier --write --no-semi --single-quote", "git add"]
+    "*.js": [
+      "prettier --write --no-semi --single-quote",
+      "git add"
+    ]
   },
   "repository": {
     "url": "git+https://github.com/pulseshift/openui5-gulp-starter-kit.git",
