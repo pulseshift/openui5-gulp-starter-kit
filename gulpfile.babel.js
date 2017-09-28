@@ -652,7 +652,7 @@ function ui5preloads() {
 }
 
 /* ----------------------------------------------------------- *
- * bundle app resources in library-preload.js file
+ * bundle library resources in library-preload.js file
  * ----------------------------------------------------------- */
 
 // [production build]
