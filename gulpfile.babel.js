@@ -79,7 +79,7 @@ const aApps = pkg.ui5.apps || []
 const aThemes = pkg.ui5.themes || []
 const aLibs = pkg.ui5.libraries || []
 const aAssets = pkg.ui5.assets || []
-const aModules = aApps.concat(aThemes).concat(aLibs).concat(aAssets)
+const aModules = [].concat(aApps).concat(aThemes).concat(aLibs).concat(aAssets)
 
 // paths used in our app
 const paths = {
@@ -127,7 +127,8 @@ const paths = {
  */
 const start = gulp.series(
   logStart,
-  gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), clean),
+  clean,
+  gulp.series(downloadOpenUI5, buildOpenUI5),
   gulp.parallel(
     entry,
     assets,
@@ -184,7 +185,8 @@ export default start
  */
 const build = gulp.series(
   logStartDist,
-  gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), cleanDist),
+  cleanDist,
+  gulp.series(downloadOpenUI5, buildOpenUI5),
   gulp.parallel(
     entryDist,
     assetsDist,
@@ -317,11 +319,9 @@ export function downloadOpenUI5() {
   const sDownloadPath = !oSource.isPrebuild
     ? path.resolve(__dirname, './.download')
     : path.resolve(__dirname, `./${UI5}`)
-  // const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
   const isDownloadRequired =
     oSource.isArchive &&
     isRemoteLink &&
-    // !fs.existsSync(sUI5TargetPath) &&
     !fs.existsSync(`${sDownloadPath}/${sUI5Version}`)
   const oDownloadOptions = {
     onProgress(iStep, iTotalSteps, oStepDetails) {
@@ -357,8 +357,6 @@ export function buildOpenUI5() {
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
   const sUI5Version = oSource.version
-  // const sCompiledURL = handlebars.compile(oSource.url)(oSource)
-  // const isRemoteLink = sCompiledURL.startsWith('http')
 
   const sDownloadPath = path.resolve(__dirname, './.download')
   const sUI5TargetPath = path.resolve(__dirname, `./${UI5}/${sUI5Version}`)
@@ -415,7 +413,7 @@ function cleanDist() {
  * ----------------------------------------------------------- */
 
 // [helper function]
-function getHandlebarsProps() {
+function getHandlebarsProps(sEntryHTMLPath) {
   const aResourceRootsSrc = []
     .concat(pkg.ui5.apps)
     .concat(pkg.ui5.libraries)
@@ -423,70 +421,79 @@ function getHandlebarsProps() {
 
   return {
     indexTitle: pkg.ui5.indexTitle,
-    src: getRelativeUI5SrcURL(),
+    src: getRelativeUI5SrcURL(sEntryHTMLPath),
     theme: pkg.ui5.theme,
     // create resource roots string
     resourceroots: JSON.stringify(
-      aResourceRootsSrc.reduce(
-        (oResult, oModule) =>
-          Object.assign(oResult, {
-            [oModule.name]: path.relative(
-              path.parse(pkg.main).dir,
-              oModule.path
-            )
-          }),
-        {}
-      )
+      aResourceRootsSrc.reduce((oResult, oModule) => {
+        const sModulePath = oModule.path.replace(
+          new RegExp(`^${SRC}`),
+          process.env.NODE_ENV === 'development' ? DEV : DIST
+        )
+        // create path to theme relative to entry HTML
+        return Object.assign(oResult, {
+          [oModule.name]: path.relative(
+            path.parse(sEntryHTMLPath).dir,
+            sModulePath
+          )
+        })
+      }, {})
     ),
     // create custom theme roots string
     themeroots: JSON.stringify(
-      pkg.ui5.themes.reduce(
-        (oResult, oTheme) =>
-          Object.assign(oResult, {
-            [oTheme.name]: path.relative(
-              path.parse(pkg.main).dir,
-              `${oTheme.path}/UI5`
-            )
-          }),
-        {}
-      )
+      pkg.ui5.themes.reduce((oResult, oTheme) => {
+        const sThemePath = oTheme.path.replace(
+          new RegExp(`^${SRC}`),
+          process.env.NODE_ENV === 'development' ? DEV : DIST
+        )
+        // create path to theme relative to entry HTML
+        return Object.assign(oResult, {
+          [oTheme.name]: path.relative(
+            path.parse(sEntryHTMLPath).dir,
+            `${sThemePath}/UI5`
+          )
+        })
+      }, {})
     )
   }
 }
 
 // [helper function]
-function getRelativeUI5SrcURL() {
-  const sEntryHTMLPath = pkg.main
+function getRelativeUI5SrcURL(sEntryHTMLPath) {
+  const sEntryPath = path.dirname(sEntryHTMLPath)
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
   const sCompiledURL = handlebars.compile(oSource.url)(oSource)
   const isRemoteLink = sCompiledURL.startsWith('http')
 
-  let sOpenUI5Path = ''
+  const sOpenUI5PathNaked = path.resolve(
+    __dirname,
+    `${UI5}/${oSource.version}/sap-ui-core.js`
+  )
+  const sOpenUI5PathWrapped = path.resolve(
+    __dirname,
+    `${UI5}/${oSource.version}/resources/sap-ui-core.js`
+  )
+
   let sRelativeUI5Path = ''
 
   if (oSource.isArchive && isRemoteLink && !oSource.isPrebuild) {
     // ui5/version/sap-ui-core.js
-    sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`
-    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
+    sRelativeUI5Path = path.relative(sEntryPath, sOpenUI5PathNaked)
   } else if (oSource.isArchive && isRemoteLink && oSource.isPrebuild) {
-    // ui5/version/sap-ui-core.js OR ui5/version/resources/sap-ui-core.js
-    sOpenUI5Path = fs.existsSync(
-      path.resolve(
-        __dirname,
-        `${UI5}/${oSource.version}/resources/sap-ui-core.js`
-      )
+    // ui5/version/resources/sap-ui-core.js (wrapped) OR ui5/version/sap-ui-core.js (naked)
+    sRelativeUI5Path = path.relative(
+      sEntryPath,
+      fs.existsSync(sOpenUI5PathWrapped)
+        ? sOpenUI5PathWrapped
+        : sOpenUI5PathNaked
     )
-      ? `${UI5}/${oSource.version}/resources/sap-ui-core.js`
-      : `${UI5}/${oSource.version}/sap-ui-core.js`
-    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   } else if (!oSource.isArchive && isRemoteLink) {
-    // direct link
+    // direct remote link
     sRelativeUI5Path = sCompiledURL
   } else if (!isRemoteLink) {
-    // direct link (fallback)
-    sOpenUI5Path = sCompiledURL
-    sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
+    // direct local link
+    sRelativeUI5Path = path.relative(sEntryPath, sCompiledURL)
   }
 
   return sRelativeUI5Path
@@ -494,20 +501,39 @@ function getRelativeUI5SrcURL() {
 
 // [development build]
 function entry() {
-  return paths.entry.src.length === 0
-    ? Promise.resolve()
-    : gulp
-        .src(
-          paths.entry.src,
-          // filter out unchanged files between runs
-          { since: gulp.lastRun(entry) }
-        )
-        // don't exit the running watcher task on errors
-        .pipe(plumber())
-        // compile handlebars to HTML
-        .pipe(hdlbars(getHandlebarsProps()))
-        .pipe(rename({ extname: '.html' }))
-        .pipe(gulp.dest(DEV))
+  // update spinner state
+  spinner.text = 'Compiling project resources...'
+
+  const aEntries = paths.entry.src.map(
+    sEntry =>
+      new Promise((resolve, reject) =>
+        gulp
+          .src(
+            [sEntry],
+            // filter out unchanged files between runs
+            { base: SRC, since: gulp.lastRun(entry) }
+          )
+          // don't exit the running watcher task on errors
+          .pipe(plumber())
+          // compile handlebars to HTML
+          .pipe(
+            hdlbars(
+              getHandlebarsProps(
+                path.resolve(
+                  __dirname,
+                  sEntry.replace(new RegExp(`^${SRC}`), DEV)
+                )
+              )
+            )
+          )
+          .pipe(rename({ extname: '.html' }))
+          .on('error', reject)
+          .pipe(gulp.dest(DEV))
+          .on('end', resolve)
+      )
+  )
+
+  return Promise.all(aEntries)
 }
 
 // [production build]
@@ -515,16 +541,38 @@ function entryDist() {
   // update spinner state
   spinner.text = 'Compiling project resources...'
 
-  return paths.entry.src.length === 0
-    ? Promise.resolve()
-    : gulp
-        .src(paths.entry.src)
-        // compile handlebars to HTML
-        .pipe(hdlbars(getHandlebarsProps()))
-        // minify HTML (disabled, cause data-sap-ui-theme-roots gets removed)
-        // .pipe(htmlmin())
-        .pipe(rename({ extname: '.html' }))
-        .pipe(gulp.dest(DIST))
+  const aEntries = paths.entry.src.map(
+    sEntry =>
+      new Promise((resolve, reject) =>
+        gulp
+          .src(
+            [sEntry],
+            // filter out unchanged files between runs
+            { base: SRC, since: gulp.lastRun(entry) }
+          )
+          // don't exit the running watcher task on errors
+          .pipe(plumber())
+          // compile handlebars to HTML
+          .pipe(
+            hdlbars(
+              getHandlebarsProps(
+                path.resolve(
+                  __dirname,
+                  sEntry.replace(new RegExp(`^${SRC}`), DIST)
+                )
+              )
+            )
+          )
+          // minify HTML (disabled, cause data-sap-ui-theme-roots gets removed)
+          // .pipe(htmlmin())
+          .pipe(rename({ extname: '.html' }))
+          .on('error', reject)
+          .pipe(gulp.dest(DIST))
+          .on('end', resolve)
+      )
+  )
+
+  return Promise.all(aEntries)
 }
 
 /* ----------------------------------------------------------- *
