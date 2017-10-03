@@ -71,6 +71,8 @@ const SRC = 'src'
 const DEV = '.tmp'
 // path to ditribution direcory
 const DIST = 'dist'
+// path to ui5 repository
+const UI5 = process.env.NODE_ENV === 'development' ? 'ui5' : 'ui5'
 
 // read modules
 const aApps = pkg.ui5.apps || []
@@ -259,7 +261,7 @@ function watch() {
     server: {
       baseDir: `./${DEV}`,
       routes: {
-        '/ui5': './ui5'
+        '/ui5': `./${UI5}`
       }
     }
   })
@@ -279,7 +281,7 @@ export function testDist() {
     server: {
       baseDir: `./${DIST}`,
       routes: {
-        '/ui5': './ui5'
+        '/ui5': `./${UI5}`
       }
     }
   })
@@ -314,7 +316,7 @@ export function downloadOpenUI5() {
   // we can extract it directly into '/ui5' target directory
   const sDownloadPath = !oSource.isPrebuild
     ? path.resolve(__dirname, './.download')
-    : path.resolve(__dirname, `./ui5`)
+    : path.resolve(__dirname, `./${UI5}`)
   // const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
   const isDownloadRequired =
     oSource.isArchive &&
@@ -359,7 +361,7 @@ export function buildOpenUI5() {
   // const isRemoteLink = sCompiledURL.startsWith('http')
 
   const sDownloadPath = path.resolve(__dirname, './.download')
-  const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
+  const sUI5TargetPath = path.resolve(__dirname, `./${UI5}/${sUI5Version}`)
   const isBuildRequired =
     oSource.isPrebuild === false && !fs.existsSync(sUI5TargetPath)
   const oBuildOptions = {
@@ -468,14 +470,21 @@ function getRelativeUI5SrcURL() {
     sOpenUI5Path = `ui5/${oSource.version}/sap-ui-core.js`
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   } else if (oSource.isArchive && isRemoteLink && oSource.isPrebuild) {
-    // ui5/version/resources/sap-ui-core.js
-    sOpenUI5Path = `ui5/${oSource.version}/resources/sap-ui-core.js`
+    // ui5/version/sap-ui-core.js OR ui5/version/resources/sap-ui-core.js
+    sOpenUI5Path = fs.existsSync(
+      path.resolve(
+        __dirname,
+        `${UI5}/${oSource.version}/resources/sap-ui-core.js`
+      )
+    )
+      ? `${UI5}/${oSource.version}/resources/sap-ui-core.js`
+      : `${UI5}/${oSource.version}/sap-ui-core.js`
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   } else if (!oSource.isArchive && isRemoteLink) {
     // direct link
     sRelativeUI5Path = sCompiledURL
   } else if (!isRemoteLink) {
-    // direct link
+    // direct link (fallback)
     sOpenUI5Path = sCompiledURL
     sRelativeUI5Path = path.relative(path.dirname(sEntryHTMLPath), sOpenUI5Path)
   }
