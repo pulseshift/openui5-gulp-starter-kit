@@ -5,21 +5,14 @@
   "scripts": {
     "start": "babel-node node_modules/gulp/bin/gulp.js --silent",
     "start:verbose": "babel-node node_modules/gulp/bin/gulp.js",
-    "start:localDist": "babel-node node_modules/gulp/bin/gulp.js testDist --silent",
+    "start:dist": "babel-node node_modules/gulp/bin/gulp.js testDist --silent",
     "build": "babel-node node_modules/gulp/bin/gulp.js build --silent",
     "build:verbose": "babel-node node_modules/gulp/bin/gulp.js build",
     "precommit": "lint-staged"
   },
-  "keywords": [
-    "pulseshift",
-    "OpenUI5",
-    "ui5"
-  ],
+  "keywords": ["pulseshift", "OpenUI5", "ui5"],
   "lint-staged": {
-    "*.js": [
-      "prettier --write --no-semi --single-quote",
-      "git add"
-    ]
+    "*.js": ["prettier --write --no-semi --single-quote", "git add"]
   },
   "repository": {
     "url": "git+https://github.com/pulseshift/openui5-gulp-starter-kit.git",
