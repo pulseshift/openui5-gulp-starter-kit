@@ -1,6 +1,6 @@
 {
   "name": "openui5-gulp-starter-kit",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "OpenUI5 template app build with gulp.",
   "scripts": {
     "start": "babel-node node_modules/gulp/bin/gulp.js --silent",
