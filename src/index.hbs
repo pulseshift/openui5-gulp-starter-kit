@@ -1,44 +1,38 @@
 <!DOCTYPE HTML>
 <html>
 
-  <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta charset="UTF-8">
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta charset="UTF-8">
 
-    <title>{{secure indexTitle}}</title>
+  <title>{{secure indexTitle}}</title>
 
-    <script id="sap-ui-bootstrap"
-      src="{{secure src}}"
-      data-sap-ui-libs="sap.m"
-      data-sap-ui-theme="sap_belize"
-      data-sap-ui-frameOptions="deny"
-      data-sap-ui-compatVersion="edge"
-      data-sap-ui-bindingSyntax="complex"
-      data-sap-ui-preload="async"
-      data-sap-ui-resourceroots='{{secure resourceroots}}'>
+  <script id="sap-ui-bootstrap" src="{{secure src}}" data-sap-ui-libs="sap.m" data-sap-ui-theme="sap_belize" data-sap-ui-frameOptions="deny"
+    data-sap-ui-compatVersion="edge" data-sap-ui-bindingSyntax="complex" data-sap-ui-preload="async" data-sap-ui-resourceroots='{{secure resourceroots}}'>
+
     </script>
 
-    <script>
-      sap.ui.getCore().attachInit(function() {
-        // init component container
-        var oComponentContainer = new sap.ui.core.ComponentContainer({
-          height: '100%'
-        }).placeAt('content');
+  <script>
+    sap.ui.getCore().attachInit(function () {
+      // init component container
+      var oComponentContainer = new sap.ui.core.ComponentContainer({
+        height: '100%'
+      }).placeAt('content');
 
-        // init app component and load asynchroneously
-        sap.ui.component({
-          name: 'app.todo',
-          manifestFirst: true,
-          async: true
-        })
-        .then(function(oComponent) {
+      // init app component and load asynchroneously
+      sap.ui.component({
+        name: 'app.todo',
+        manifestFirst: true,
+        async: true
+      })
+        .then(function (oComponent) {
           oComponentContainer.setComponent(oComponent)
         });
-      });
-    </script>
-  </head>
+    });
+  </script>
+</head>
 
-  <body class="sapUiBody" id="content">
-  </body>
+<body class="sapUiBody" id="content">
+</body>
 
 </html>

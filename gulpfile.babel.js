@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 /**
  *
  *  OpenUI5 Gulp Starter Kit
@@ -70,24 +72,45 @@ const DEV = '.tmp'
 // path to ditribution direcory
 const DIST = 'dist'
 
+// read modules
+const aApps = pkg.ui5.apps || []
+const aThemes = pkg.ui5.themes || []
+const aLibs = pkg.ui5.libraries || []
+const aAssets = pkg.ui5.assets || []
+const aModules = aApps.concat(aThemes).concat(aLibs).concat(aAssets)
+
 // paths used in our app
 const paths = {
   entry: {
     src: [pkg.main]
   },
   assets: {
-    src: [
-      `${SRC}/**/*.properties`,
-      `${SRC}/**/*.json`,
-      `${SRC}/**/*.xml`,
-      `${SRC}/**/*.{jpg,jpeg,png,svg,ico}`
-    ]
+    src: aModules
+      .reduce(
+        (aSrc, oModule) =>
+          aSrc.concat([
+            `${oModule.path}/**/*.properties`,
+            `${oModule.path}/**/*.json`,
+            `${oModule.path}/**/*.{xml,html}`,
+            `${oModule.path}/**/*.css`,
+            `${oModule.path}/**/*.{jpg,jpeg,png,svg,ico}`
+          ]),
+        []
+      )
+      // take into account .js files only for asset roots
+      .concat(aAssets.map(oAsset => `${oAsset.path}/**/*.js`))
   },
   scripts: {
-    src: [`${SRC}/**/*.js`]
+    src: aApps.concat(aLibs).map(oModule => `${oModule.path}/**/*.js`)
   },
-  styles: {
-    src: [`${SRC}/**/*.less`]
+  appStyles: {
+    src: aApps.concat(aAssets).map(oModule => `${oModule.path}/**/*.less`)
+  },
+  libStyles: {
+    src: aLibs.map(oLibrary => `${oLibrary.path}/**/*.less`)
+  },
+  themeStyles: {
+    src: aThemes.map(oTheme => `${oTheme.path}/**/*.less`)
   },
   cacheBuster: {
     // this should be the result file of task 'entryDist'
@@ -103,7 +126,14 @@ const paths = {
 const start = gulp.series(
   logStart,
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), clean),
-  gulp.parallel(entry, assets, scripts, styles, ui5LibThemeBundle),
+  gulp.parallel(
+    entry,
+    assets,
+    scripts,
+    ui5AppStyles,
+    ui5LibStyles,
+    ui5ThemeStyles
+  ),
   logStats,
   watch
 )
@@ -157,8 +187,9 @@ const build = gulp.series(
     entryDist,
     assetsDist,
     scriptsDist,
-    stylesDist,
-    ui5LibThemeBundleDist
+    ui5AppStylesDist,
+    ui5LibStylesDist,
+    ui5ThemeStylesDist
   ),
   gulp.parallel(ui5preloads, ui5LibPreloads),
   ui5cacheBust,
@@ -211,16 +242,14 @@ export { build }
 function watch() {
   const sSuccessMessage =
     '\u{1F64C}  (Server started, use Ctrl+C to stop and go back to the console...)'
-  const aWatchLibThemeSrc = pkg.ui5.libraries.map(
-    oLibrary => `${oLibrary.path}/**/*.less`
-  )
 
   // start watchers
   gulp.watch(paths.entry.src, gulp.series(entry, reload))
   gulp.watch(paths.assets.src, gulp.series(assets, reload))
   gulp.watch(paths.scripts.src, gulp.series(scripts, reload))
-  gulp.watch(paths.styles.src, gulp.series(styles, reload))
-  gulp.watch(aWatchLibThemeSrc, gulp.series(ui5LibThemeBundle, reload))
+  gulp.watch(paths.appStyles.src, gulp.series(ui5AppStyles, reload))
+  gulp.watch(paths.libStyles.src, gulp.series(ui5LibStyles, reload))
+  gulp.watch(paths.themeStyles.src, gulp.series(ui5ThemeStyles, reload))
 
   // start HTTP server
   server.init({
@@ -233,7 +262,6 @@ function watch() {
         '/ui5': './ui5'
       }
     }
-    // proxy: 'yourlocal.dev'
   })
 
   // log success message
@@ -287,7 +315,7 @@ export function downloadOpenUI5() {
   const sDownloadPath = !oSource.isPrebuild
     ? path.resolve(__dirname, './.download')
     : path.resolve(__dirname, `./ui5`)
-  const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
+  // const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
   const isDownloadRequired =
     oSource.isArchive &&
     isRemoteLink &&
@@ -327,8 +355,8 @@ export function buildOpenUI5() {
   const sSourceID = pkg.ui5.src
   const oSource = pkg.ui5.srcLinks[sSourceID]
   const sUI5Version = oSource.version
-  const sCompiledURL = handlebars.compile(oSource.url)(oSource)
-  const isRemoteLink = sCompiledURL.startsWith('http')
+  // const sCompiledURL = handlebars.compile(oSource.url)(oSource)
+  // const isRemoteLink = sCompiledURL.startsWith('http')
 
   const sDownloadPath = path.resolve(__dirname, './.download')
   const sUI5TargetPath = path.resolve(__dirname, `./ui5/${sUI5Version}`)
@@ -386,15 +414,37 @@ function cleanDist() {
 
 // [helper function]
 function getHandlebarsProps() {
+  const aResourceRootsSrc = []
+    .concat(pkg.ui5.apps)
+    .concat(pkg.ui5.libraries)
+    .concat(pkg.ui5.assets)
+
   return {
     indexTitle: pkg.ui5.indexTitle,
     src: getRelativeUI5SrcURL(),
+    theme: pkg.ui5.theme,
     // create resource roots string
     resourceroots: JSON.stringify(
-      pkg.ui5.apps.reduce(
-        (oResult, oApp) =>
+      aResourceRootsSrc.reduce(
+        (oResult, oModule) =>
           Object.assign(oResult, {
-            [oApp.name]: path.relative(path.parse(pkg.main).dir, oApp.path)
+            [oModule.name]: path.relative(
+              path.parse(pkg.main).dir,
+              oModule.path
+            )
+          }),
+        {}
+      )
+    ),
+    // create custom theme roots string
+    themeroots: JSON.stringify(
+      pkg.ui5.themes.reduce(
+        (oResult, oTheme) =>
+          Object.assign(oResult, {
+            [oTheme.name]: path.relative(
+              path.parse(pkg.main).dir,
+              `${oTheme.path}/UI5`
+            )
           }),
         {}
       )
@@ -435,20 +485,20 @@ function getRelativeUI5SrcURL() {
 
 // [development build]
 function entry() {
-  return (
-    gulp
-      .src(
-        paths.entry.src,
-        // filter out unchanged files between runs
-        { since: gulp.lastRun(entry) }
-      )
-      // don't exit the running watcher task on errors
-      .pipe(plumber())
-      // compile handlebars to HTML
-      .pipe(hdlbars(getHandlebarsProps()))
-      .pipe(rename({ extname: '.html' }))
-      .pipe(gulp.dest(DEV))
-  )
+  return paths.entry.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(
+          paths.entry.src,
+          // filter out unchanged files between runs
+          { since: gulp.lastRun(entry) }
+        )
+        // don't exit the running watcher task on errors
+        .pipe(plumber())
+        // compile handlebars to HTML
+        .pipe(hdlbars(getHandlebarsProps()))
+        .pipe(rename({ extname: '.html' }))
+        .pipe(gulp.dest(DEV))
 }
 
 // [production build]
@@ -456,16 +506,16 @@ function entryDist() {
   // update spinner state
   spinner.text = 'Compiling project resources...'
 
-  return (
-    gulp
-      .src(paths.entry.src)
-      // compile handlebars to HTML
-      .pipe(hdlbars(getHandlebarsProps()))
-      // minify HTML
-      .pipe(htmlmin())
-      .pipe(rename({ extname: '.html' }))
-      .pipe(gulp.dest(DIST))
-  )
+  return paths.entry.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(paths.entry.src)
+        // compile handlebars to HTML
+        .pipe(hdlbars(getHandlebarsProps()))
+        // minify HTML (disabled, cause data-sap-ui-theme-roots gets removed)
+        // .pipe(htmlmin())
+        .pipe(rename({ extname: '.html' }))
+        .pipe(gulp.dest(DIST))
 }
 
 /* ----------------------------------------------------------- *
@@ -474,58 +524,62 @@ function entryDist() {
 
 // [development build]
 function assets() {
-  return (
-    gulp
-      .src(
-        paths.assets.src,
-        // filter out unchanged files between runs
-        { since: gulp.lastRun(assets) }
-      )
-      // don't exit the running watcher task on errors
-      .pipe(plumber())
-      // optimize size and quality of images
-      .pipe(
-        gulpif(
-          /.*\.(jpg|jpeg|png)$/,
-          imagemin({
-            progressive: true,
-            interlaced: true
-          })
+  return paths.assets.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(
+          paths.assets.src,
+          // filter out unchanged files between runs
+          { base: SRC, since: gulp.lastRun(assets) }
         )
-      )
-      .pipe(gulp.dest(DEV))
-  )
+        // don't exit the running watcher task on errors
+        .pipe(plumber())
+        // optimize size and quality of images
+        .pipe(
+          gulpif(
+            /.*\.(jpg|jpeg|png)$/,
+            imagemin({
+              progressive: true,
+              interlaced: true
+            })
+          )
+        )
+        .pipe(gulp.dest(DEV))
 }
 
 // [production build]
 function assetsDist() {
-  return (
-    gulp
-      .src(paths.assets.src)
-      // optimize size and quality of images
-      .pipe(
-        gulpif(
-          /.*\.(jpg|jpeg|png)$/,
-          imagemin({
-            progressive: true,
-            interlaced: true
-          })
+  return paths.assets.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(paths.assets.src, { base: SRC })
+        // optimize size and quality of images
+        .pipe(
+          gulpif(
+            /.*\.(jpg|jpeg|png)$/,
+            imagemin({
+              progressive: true,
+              interlaced: true
+            })
+          )
         )
-      )
-      // minify XML, SVG and JSON
-      .pipe(
-        gulpif(
-          /.*\.(xml|json|svg)$/,
-          prettydata({
-            type: 'minify',
-            extensions: {
-              svg: 'xml'
-            }
-          })
+        // minify HTML
+        .pipe(gulpif(/.*\.html$/, htmlmin()))
+        // minify XML, SVG and JSON
+        .pipe(
+          gulpif(
+            /.*\.(xml|json|svg)$/,
+            prettydata({
+              type: 'minify',
+              extensions: {
+                svg: 'xml'
+              }
+            })
+          )
         )
-      )
-      .pipe(gulp.dest(DIST))
-  )
+        // minify JS
+        .pipe(gulpif(/.*\.js$/, uglify()))
+        .pipe(gulp.dest(DIST))
 }
 
 /* ----------------------------------------------------------- *
@@ -534,44 +588,44 @@ function assetsDist() {
 
 // [development build]
 function scripts() {
-  return (
-    gulp
-      .src(
-        paths.scripts.src,
-        // filter out unchanged files between runs
-        { since: gulp.lastRun(scripts) }
-      )
-      // don't exit the running watcher task on errors
-      .pipe(plumber())
-      .pipe(sourcemaps.init())
-      // babel will run with the settings defined in `.babelrc` file
-      .pipe(babel())
-      .pipe(sourcemaps.write('../.maps'))
-      .pipe(gulp.dest(DEV))
-  )
+  return paths.scripts.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(
+          paths.scripts.src,
+          // filter out unchanged files between runs
+          { base: SRC, since: gulp.lastRun(scripts) }
+        )
+        // don't exit the running watcher task on errors
+        .pipe(plumber())
+        .pipe(sourcemaps.init())
+        // babel will run with the settings defined in `.babelrc` file
+        .pipe(babel())
+        .pipe(sourcemaps.write('../.maps'))
+        .pipe(gulp.dest(DEV))
 }
 
 // [production build]
 function scriptsDist() {
-  return (
-    gulp
-      .src(paths.scripts.src)
-      // babel will run with the settings defined in `.babelrc` file
-      .pipe(babel())
-      // save non-minified copies with debug duffix
-      .pipe(rename({ suffix: '-dbg' }))
-      .pipe(gulp.dest(DIST))
-      // process copies without suffix
-      .pipe(
-        rename(oFile => {
-          oFile.basename = oFile.basename.replace(/-dbg$/, '')
-          return oFile
-        })
-      )
-      // minify scripts
-      .pipe(uglify())
-      .pipe(gulp.dest(DIST))
-  )
+  return paths.scripts.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(paths.scripts.src, { base: SRC })
+        // babel will run with the settings defined in `.babelrc` file
+        .pipe(babel())
+        // save non-minified copies with debug duffix
+        .pipe(rename({ suffix: '-dbg' }))
+        .pipe(gulp.dest(DIST))
+        // process copies without suffix
+        .pipe(
+          rename(oFile => {
+            oFile.basename = oFile.basename.replace(/-dbg$/, '')
+            return oFile
+          })
+        )
+        // minify scripts
+        .pipe(uglify())
+        .pipe(gulp.dest(DIST))
 }
 
 /* ----------------------------------------------------------- *
@@ -579,49 +633,50 @@ function scriptsDist() {
  * ----------------------------------------------------------- */
 
 // [development build]
-function styles() {
+function ui5AppStyles() {
   const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
-  return (
-    gulp
-      .src(
-        paths.styles.src,
-        // filter out unchanged files between runs
-        { since: gulp.lastRun(styles) }
-      )
-      // don't exit the running watcher task on errors
-      .pipe(plumber())
-      .pipe(sourcemaps.init())
-      // compile LESS to CSS
-      .pipe(
-        less({
-          plugins: [autoprefix]
-        })
-      )
-      .pipe(sourcemaps.write('../.maps'))
-      .pipe(gulp.dest(DEV))
-  )
+  return paths.appStyles.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(
+          paths.appStyles.src,
+          // filter out unchanged files between runs
+          { base: SRC, since: gulp.lastRun(ui5AppStyles) }
+        )
+        // don't exit the running watcher task on errors
+        .pipe(plumber())
+        .pipe(sourcemaps.init())
+        // compile LESS to CSS
+        .pipe(
+          less({
+            plugins: [autoprefix]
+          })
+        )
+        .pipe(sourcemaps.write('../.maps'))
+        .pipe(gulp.dest(DEV))
 }
 
 // [production build]
-function stylesDist() {
+function ui5AppStylesDist() {
   const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
-  return (
-    gulp
-      .src(paths.styles.src)
-      // compile LESS to CSS
-      .pipe(
-        less({
-          plugins: [autoprefix]
-        })
-      )
-      // minify CSS
-      .pipe(
-        cleanCSS({
-          level: 2
-        })
-      )
-      .pipe(gulp.dest(DIST))
-  )
+  return paths.appStyles.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(paths.appStyles.src, { base: SRC })
+        // compile LESS to CSS
+        .pipe(
+          less({
+            plugins: [autoprefix]
+          })
+        )
+        // minify CSS
+        .pipe(
+          cleanCSS({
+            inline: ['none'],
+            level: 2
+          })
+        )
+        .pipe(gulp.dest(DIST))
 }
 
 /* ----------------------------------------------------------- *
@@ -667,10 +722,8 @@ function ui5preloads() {
 
 // [production build]
 function ui5LibPreloads() {
-  // update spinner state
-  spinner.text = 'Bundling modules...'
-
-  const aPreloadPromise = pkg.ui5.libraries.map(oLibrary => {
+  const aLibraries = pkg.ui5.libraries || []
+  const aPreloadPromise = aLibraries.map(oLibrary => {
     const sDistLibraryPath = oLibrary.path.replace(new RegExp(`^${SRC}`), DIST)
     return new Promise(function(resolve, reject) {
       gulp
@@ -717,63 +770,61 @@ function ui5LibPreloads() {
  * ----------------------------------------------------------- */
 
 // [development build]
-function ui5LibThemeBundle() {
+function ui5LibStyles() {
+  const aLibraries = pkg.ui5.libraries || []
   const mapPathToDev = sPath => sPath.replace(new RegExp(`^${SRC}`), DEV)
-  const aSelectThemeLessFiles = pkg.ui5.libraries.map(
-    oLibrary => `${oLibrary.path}/**/*.less`
-  )
-  const aSelectLibrarySources = pkg.ui5.libraries.map(
+  const aSelectLibrarySources = aLibraries.map(
     oLibrary => `${mapPathToDev(oLibrary.path)}/**/library.source.less`
   )
 
-  return new Promise((resolve, reject) => {
-    // 1. copy theme resources (assets) to DEV
-    gulp
-      .src(aSelectThemeLessFiles, {
-        base: SRC,
-        // filter out unchanged files between runs
-        since: gulp.lastRun(ui5LibThemeBundle)
-      })
-      // don't exit the running watcher task on errors
-      .pipe(plumber())
-      .pipe(gulp.dest(DEV))
-      .on('error', reject)
-      .on('end', resolve)
-  }).then(
-    () =>
-      new Promise((resolve, reject) => {
-        // 2. compile library.css
+  return paths.libStyles.src.length === 0
+    ? Promise.resolve()
+    : new Promise((resolve, reject) => {
+        // 1. copy theme resources (assets) to DEV
         gulp
-          .src(aSelectLibrarySources, {
-            base: DEV,
-            read: true,
+          .src(paths.libStyles.src, {
+            base: SRC,
             // filter out unchanged files between runs
-            since: gulp.lastRun(ui5LibThemeBundle)
+            since: gulp.lastRun(ui5LibStyles)
           })
           // don't exit the running watcher task on errors
           .pipe(plumber())
-          .pipe(
-            tap(oFile => {
-              ui5CompileLessLib(oFile)
-            })
-          )
           .pipe(gulp.dest(DEV))
           .on('error', reject)
           .on('end', resolve)
-      })
-  )
+      }).then(
+        () =>
+          new Promise((resolve, reject) => {
+            // 2. compile library.css
+            gulp
+              .src(aSelectLibrarySources, {
+                base: DEV,
+                read: true,
+                // filter out unchanged files between runs
+                since: gulp.lastRun(ui5LibStyles)
+              })
+              // don't exit the running watcher task on errors
+              .pipe(plumber())
+              .pipe(
+                tap(oFile => {
+                  ui5CompileLessLib(oFile)
+                })
+              )
+              .pipe(gulp.dest(DEV))
+              .on('error', reject)
+              .on('end', resolve)
+          })
+      )
 }
 
 // [production build]
-function ui5LibThemeBundleDist() {
+function ui5LibStylesDist() {
+  const aLibraries = pkg.ui5.libraries || []
   const mapPathToDist = sPath => sPath.replace(new RegExp(`^${SRC}`), DIST)
-  const aSelectThemeLessFiles = pkg.ui5.libraries.map(
-    oLibrary => `${oLibrary.path}/**/*.less`
-  )
-  const aSelectLibrarySources = pkg.ui5.libraries.map(
+  const aSelectLibrarySources = aLibraries.map(
     oLibrary => `${mapPathToDist(oLibrary.path)}/**/library.source.less`
   )
-  const aSelectLibraryBundles = pkg.ui5.libraries.reduce(
+  const aSelectLibraryBundles = aLibraries.reduce(
     (aBundles, oLibrary) =>
       aBundles.concat([
         `${mapPathToDist(oLibrary.path)}/**/library.css`,
@@ -782,61 +833,190 @@ function ui5LibThemeBundleDist() {
     []
   )
 
-  return new Promise((resolve, reject) => {
-    // 1. copy theme resources (assets) to DEV
-    gulp
-      .src(aSelectThemeLessFiles, {
-        base: SRC,
-        // select only files that have changed since the last run
-        since: gulp.lastRun(ui5LibThemeBundleDist)
+  return paths.libStyles.src.length === 0
+    ? Promise.resolve()
+    : new Promise((resolve, reject) => {
+        // 1. copy theme resources (assets) to DEV
+        gulp
+          .src(paths.libStyles.src, {
+            base: SRC
+          })
+          .pipe(gulp.dest(DIST))
+          .on('error', reject)
+          .on('end', resolve)
       })
-      .pipe(gulp.dest(DIST))
-      .on('error', reject)
-      .on('end', resolve)
-  })
-    .then(
-      () =>
-        new Promise((resolve, reject) => {
-          // 2. compile library.css
-          gulp
-            .src(aSelectLibrarySources, {
-              read: true,
-              base: DIST,
-              // select only files that have changed since the last run
-              since: gulp.lastRun(ui5LibThemeBundleDist)
+        .then(
+          () =>
+            new Promise((resolve, reject) => {
+              // 2. compile library.css
+              gulp
+                .src(aSelectLibrarySources, {
+                  read: true,
+                  base: DIST
+                })
+                .pipe(
+                  tap(oFile => {
+                    ui5CompileLessLib(oFile)
+                  })
+                )
+                .pipe(gulp.dest(DIST))
+                .on('error', reject)
+                .on('end', resolve)
             })
-            .pipe(
-              tap(oFile => {
-                ui5CompileLessLib(oFile)
-              })
-            )
-            .pipe(gulp.dest(DIST))
-            .on('error', reject)
-            .on('end', resolve)
-        })
-    )
-    .then(
-      () =>
-        new Promise((resolve, reject) =>
-          // 3. minify css after creation
-          gulp
-            .src(aSelectLibraryBundles, {
-              base: DIST,
-              // select only files that have changed since the last run
-              since: gulp.lastRun(ui5LibThemeBundleDist)
-            })
-            // minify CSS
-            .pipe(
-              cleanCSS({
-                inline: ['none'],
-                level: 2
-              })
-            )
-            .pipe(gulp.dest(DIST))
-            .on('end', resolve)
-            .on('error', reject)
         )
-    )
+        .then(
+          () =>
+            new Promise((resolve, reject) =>
+              // 3. minify css after creation
+              gulp
+                .src(aSelectLibraryBundles, {
+                  base: DIST
+                })
+                // minify CSS
+                .pipe(
+                  cleanCSS({
+                    inline: ['none'],
+                    level: 2
+                  })
+                )
+                .pipe(gulp.dest(DIST))
+                .on('end', resolve)
+                .on('error', reject)
+            )
+        )
+}
+
+/* ----------------------------------------------------------- *
+ * bundle theme styles in library.css file
+ * ----------------------------------------------------------- */
+
+// [development build]
+function ui5ThemeStyles() {
+  const sTargetTheme = pkg.ui5.theme
+  const aThemes = pkg.ui5.themes || []
+  const mapPathToDev = sPath => sPath.replace(new RegExp(`^${SRC}`), DEV)
+  const aSelectLibrarySources = aThemes.map(
+    oTheme =>
+      `${mapPathToDev(
+        oTheme.path
+      )}/**/themes/${sTargetTheme}/library.source.less`
+  )
+
+  return paths.themeStyles.src.length === 0
+    ? Promise.resolve()
+    : new Promise((resolve, reject) => {
+        // 1. copy theme resources (assets) to DEV
+        gulp
+          .src(paths.themeStyles.src, {
+            base: SRC,
+            // filter out unchanged files between runs
+            since: gulp.lastRun(ui5ThemeStyles)
+          })
+          // don't exit the running watcher task on errors
+          .pipe(plumber())
+          .pipe(gulp.dest(DEV))
+          .on('error', reject)
+          .on('end', resolve)
+      }).then(
+        () =>
+          new Promise((resolve, reject) => {
+            // 2. compile library.css
+            gulp
+              .src(aSelectLibrarySources, {
+                base: DEV,
+                read: true,
+                // filter out unchanged files between runs
+                since: gulp.lastRun(ui5ThemeStyles)
+              })
+              // don't exit the running watcher task on errors
+              .pipe(plumber())
+              .pipe(
+                tap(oFile => {
+                  ui5CompileLessLib(oFile)
+                })
+              )
+              .pipe(gulp.dest(DEV))
+              .on('error', reject)
+              .on('end', resolve)
+          })
+      )
+}
+
+// [production build]
+function ui5ThemeStylesDist() {
+  const sTargetTheme = pkg.ui5.theme
+  const aThemes = pkg.ui5.themes || []
+  const mapPathToDist = sPath => sPath.replace(new RegExp(`^${SRC}`), DIST)
+  const aSelectLibrarySources = aThemes.map(
+    oTheme =>
+      `${mapPathToDist(
+        oTheme.path
+      )}/**/themes/${sTargetTheme}/library.source.less`
+  )
+  const aSelectLibraryBundles = aThemes.reduce(
+    (aBundles, oTheme) =>
+      aBundles.concat([
+        `${mapPathToDist(oTheme.path)}/**/themes/${sTargetTheme}/library.css`,
+        `${mapPathToDist(
+          oTheme.path
+        )}/**/themes/${sTargetTheme}/library-RTL.css`
+      ]),
+    []
+  )
+
+  return paths.themeStyles.src.length === 0
+    ? Promise.resolve()
+    : new Promise((resolve, reject) => {
+        // 1. copy theme resources (assets) to DEV
+        gulp
+          .src(paths.themeStyles.src, {
+            base: SRC
+          })
+          .pipe(gulp.dest(DIST))
+          .on('error', reject)
+          .on('end', resolve)
+      })
+        .then(
+          () =>
+            new Promise((resolve, reject) => {
+              // 2. compile library.css
+              gulp
+                .src(aSelectLibrarySources, {
+                  read: true,
+                  base: DIST
+                })
+                .pipe(
+                  tap(oFile => {
+                    ui5CompileLessLib(oFile)
+                  })
+                )
+                .pipe(gulp.dest(DIST))
+                .on('error', reject)
+                .on('end', resolve)
+            })
+        )
+        .then(
+          () =>
+            new Promise((resolve, reject) =>
+              // 3. minify css after creation
+              gulp
+                .src(aSelectLibraryBundles, {
+                  base: DIST,
+                  // select only files that have changed since the last run
+                  since: gulp.lastRun(ui5LibStylesDist)
+                })
+                // minify CSS
+                .pipe(
+                  cleanCSS({
+                    inline: ['none'],
+                    level: 2
+                  })
+                )
+                .pipe(gulp.dest(DIST))
+                .on('end', resolve)
+                .on('error', reject)
+            )
+        )
 }
 
 /* ----------------------------------------------------------- *
@@ -848,11 +1028,11 @@ function ui5cacheBust() {
   // update spinner state
   spinner.text = 'Run cache buster...'
 
-  return (
-    gulp
-      .src(paths.cacheBuster.src)
-      // rename UI5 module (app component) paths and update index.html
-      .pipe(tap(oFile => ui5Bust(oFile)))
-      .pipe(gulp.dest(DIST))
-  )
+  return paths.cacheBuster.src.length === 0
+    ? Promise.resolve()
+    : gulp
+        .src(paths.cacheBuster.src)
+        // rename UI5 module (app component) paths and update index.html
+        .pipe(tap(oFile => ui5Bust(oFile)))
+        .pipe(gulp.dest(DIST))
 }

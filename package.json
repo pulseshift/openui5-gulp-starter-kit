@@ -3,12 +3,18 @@
   "version": "0.0.4",
   "description": "OpenUI5 template app build with gulp.",
   "scripts": {
-    "start": "node node_modules/gulp/bin/gulp.js --silent",
-    "start:verbose": "node node_modules/gulp/bin/gulp.js",
-    "build": "node node_modules/gulp/bin/gulp.js build --silent",
-    "build:verbose": "node node_modules/gulp/bin/gulp.js build",
+    "start": "babel-node node_modules/gulp/bin/gulp.js --silent",
+    "start:verbose": "babel-node node_modules/gulp/bin/gulp.js",
+    "start:localDist": "babel-node node_modules/gulp/bin/gulp.js testDist --silent",
+    "build": "babel-node node_modules/gulp/bin/gulp.js build --silent",
+    "build:verbose": "babel-node node_modules/gulp/bin/gulp.js build",
     "precommit": "lint-staged"
   },
+  "keywords": [
+    "pulseshift",
+    "OpenUI5",
+    "ui5"
+  ],
   "lint-staged": {
     "*.js": [
       "prettier --write --no-semi --single-quote",
@@ -64,15 +70,20 @@
         "isArchive": false
       }
     },
+    "theme": "sap_belize",
     "apps": [
       {
         "name": "app.todo",
         "path": "src/openui5-todo-app"
       }
-    ]
+    ],
+    "libraries": [],
+    "themes": [],
+    "assets": []
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
+    "babel-eslint": "^8.0.1",
     "babel-preset-env": "^1.5.2",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
@@ -80,6 +91,10 @@
     "browser-sync": "^2.18.12",
     "commander": "^2.10.0",
     "del": "^3.0.0",
+    "eslint": "^4.8.0",
+    "eslint-config-prettier": "^2.6.0",
+    "eslint-plugin-babel": "^4.1.2",
+    "eslint-plugin-prettier": "^2.3.1",
     "gulp": "gulpjs/gulp#4.0",
     "gulp-babel": "^6.1.2",
     "gulp-clean-css": "^3.4.2",
