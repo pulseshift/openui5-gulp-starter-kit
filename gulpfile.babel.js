@@ -129,6 +129,7 @@ const start = gulp.series(
   logStart,
   clean,
   gulp.series(downloadOpenUI5, buildOpenUI5),
+  copyUi5Theme,
   gulp.parallel(
     entry,
     assets,
@@ -187,6 +188,7 @@ const build = gulp.series(
   logStartDist,
   cleanDist,
   gulp.series(downloadOpenUI5, buildOpenUI5),
+  copyUi5Theme,
   gulp.parallel(
     entryDist,
     assetsDist,
@@ -946,6 +948,54 @@ function ui5LibStylesDist() {
 /* ----------------------------------------------------------- *
  * bundle theme styles in library.css file
  * ----------------------------------------------------------- */
+
+// [development & production build]
+function copyUi5Theme() {
+  const aThemes = pkg.ui5.themes || []
+  const sSourceID = pkg.ui5.src
+  const oSource = pkg.ui5.srcLinks[sSourceID]
+  const sUI5Version = oSource.version
+  const sCompiledURL = handlebars.compile(oSource.url)(oSource)
+  const isPrebuild = oSource.isPrebuild
+  const isArchive = oSource.isArchive
+  const isRemoteLibrary =
+    sCompiledURL.startsWith('http') && !isArchive && isPrebuild
+
+  const sOpenUI5PathNaked = `${UI5}/${sUI5Version}/sap-ui-core.js`
+  const sOpenUI5PathWrapped = `${UI5}/${sUI5Version}/resources/sap-ui-core.js`
+
+  const sUI5Path = fs.existsSync(path.resolve(__dirname, sOpenUI5PathWrapped))
+    ? sOpenUI5PathWrapped.replace(/\/sap-ui-core\.js$/, '')
+    : sOpenUI5PathNaked.replace(/\/sap-ui-core\.js$/, '')
+
+  if (isRemoteLibrary) {
+    throw 'Custom UI5 theme build can only be used with a local UI5 library (remote UI5 libs are not supported).'
+  }
+
+  // copy UI5 theme resources to path/to/my/theme/UI5 [one-time after building ui5]
+  const aThemeUpdates = aThemes.map(
+    oTheme =>
+      new Promise((resolve, reject) =>
+        gulp
+          .src(
+            [
+              `${sUI5Path}/**/themes/**/*`,
+              `!${sUI5Path}/**/themes/**/library.css`,
+              `!${sUI5Path}/**/themes/**/library-*.css`,
+              `!${sUI5Path}/**/themes/**/*.json`
+            ],
+            {
+              base: `${sUI5Path}`
+            }
+          )
+          .pipe(gulp.dest(`${oTheme.path}/UI5`))
+          .on('error', reject)
+          .on('end', resolve)
+      )
+  )
+
+  return Promise.all(aThemeUpdates)
+}
 
 // [development build]
 function ui5ThemeStyles() {
