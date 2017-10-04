@@ -34,6 +34,10 @@ Info: To get a more detailed logging, just use `yarn start:verbose` instead.
 
 > A solid starting point for both professionals and newcomers to OpenUI5.
 
+## Other branches
+
+Please see also the seperated branches of this project, at the time these are:
+* [nwabap](https://github.com/pulseshift/openui5-gulp-starter-kit/tree/nwabap) is the OpenUI5 Starter Kit branch which allows a developer to upload SAPUI5/OpenUI5 sources into a SAP NetWeaver ABAP system as part of the Gulp task chain
 
 ### Features
 
