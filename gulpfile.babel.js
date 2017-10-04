@@ -402,12 +402,12 @@ export function buildOpenUI5() {
 
 // [development build]
 function clean() {
-  return del(`${DEV}/**/*`)
+  return del([`${DEV}/**/*`, `!${UI5}/**/*`])
 }
 
 // [production build]
 function cleanDist() {
-  return del(`${DIST}/**/*`)
+  return del([`${DIST}/**/*`, `!${UI5}/**/*`])
 }
 
 /* ----------------------------------------------------------- *
@@ -622,8 +622,6 @@ function assetsDist() {
             })
           )
         )
-        // minify HTML
-        .pipe(gulpif(/.*\.html$/, htmlmin()))
         // minify XML, SVG and JSON
         .pipe(
           gulpif(
@@ -633,6 +631,19 @@ function assetsDist() {
               extensions: {
                 svg: 'xml'
               }
+            })
+          )
+        )
+        // minify HTML
+        .pipe(gulpif(/.*\.html$/, htmlmin()))
+        // minify CSS
+        .pipe(
+          gulpif(
+            /.*\.css$/,
+            cleanCSS({
+              // do not resolve inline imports of assets
+              inline: false,
+              level: 2
             })
           )
         )
@@ -731,7 +742,6 @@ function ui5AppStylesDist() {
         // minify CSS
         .pipe(
           cleanCSS({
-            inline: ['none'],
             level: 2
           })
         )
@@ -934,7 +944,6 @@ function ui5LibStylesDist() {
                 // minify CSS
                 .pipe(
                   cleanCSS({
-                    inline: ['none'],
                     level: 2
                   })
                 )
@@ -979,6 +988,7 @@ function copyUi5Theme() {
         gulp
           .src(
             [
+              `${sUI5Path}/**/*.css`,
               `${sUI5Path}/**/themes/**/*`,
               `!${sUI5Path}/**/themes/**/library.css`,
               `!${sUI5Path}/**/themes/**/library-*.css`,
@@ -1115,7 +1125,6 @@ function ui5ThemeStylesDist() {
                 // minify CSS
                 .pipe(
                   cleanCSS({
-                    inline: ['none'],
                     level: 2
                   })
                 )
