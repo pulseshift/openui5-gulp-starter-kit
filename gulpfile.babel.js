@@ -32,6 +32,7 @@ import sourcemaps from 'gulp-sourcemaps'
 import ui5preload from 'gulp-ui5-preload'
 import ui5Bust from 'ui5-cache-buster'
 import { ui5Download, ui5Build, ui5CompileLessLib } from 'ui5-lib-util'
+import ui5uploader from 'gulp-nwabap-ui5uploader'
 import LessAutoprefix from 'less-plugin-autoprefix'
 import ora from 'ora'
 import del from 'del'
@@ -199,6 +200,7 @@ const build = gulp.series(
   ),
   gulp.parallel(ui5preloads, ui5LibPreloads),
   ui5cacheBust,
+  ui5Upload,
   logStatsDist
 )
 
@@ -1144,6 +1146,10 @@ function ui5cacheBust() {
   // update spinner state
   spinner.text = 'Run cache buster...'
 
+  if (pkg.ui5.cacheBuster === false) {
+    return Promise.resolve('Cache buster is deactivated.')
+  }
+
   return paths.cacheBuster.src.length === 0
     ? Promise.resolve()
     : gulp
@@ -1151,4 +1157,53 @@ function ui5cacheBust() {
         // rename UI5 module (app component) paths and update index.html
         .pipe(tap(oFile => ui5Bust(oFile)))
         .pipe(gulp.dest(DIST))
+}
+
+/* ----------------------------------------------------------- *
+ * SAP NetWeaver ABAP System UI5 app upload
+ * ----------------------------------------------------------- */
+
+// [production build]
+function ui5Upload() {
+  // update spinner state
+  spinner.text = 'Uploading to SAP NetWeaver ABAP System...'
+
+  // check if cache buster is deactivated
+  if (pkg.ui5.cacheBuster === true) {
+    return Promise.reject(
+      `Cache buster is not supported in combination with nwabap upload, yet.`
+    )
+  }
+
+  // check if nwabap config is maintained
+  if (!pkg.ui5.nwabapUpload) {
+    return Promise.reject(
+      `Option 'ui5.nwabapUpload' config was not found in package.json`
+    )
+  }
+
+  const aPreloadPromise = pkg.ui5.apps.map(oApp => {
+    // check if nwabap config is maintained
+    if (!oApp.nwabapDestination) {
+      return Promise.reject(
+        `Option 'nwabapDestination' config was not found for app ${oApp.name} in package.json`
+      )
+    }
+    return new Promise((resolve, reject) => {
+      gulp
+        .src([DIST])
+        .pipe(
+          ui5uploader({
+            root: `${DIST}/${oApp.path}`,
+            // pass conn and auth config
+            ...pkg.ui5.nwabapUpload,
+            // pass nwabap bsp destination
+            ui5: oApp.nwabapDestination
+          })
+        )
+        .on('error', reject)
+        .on('end', resolve)
+    })
+  })
+  return Promise.all(aPreloadPromise)
 }

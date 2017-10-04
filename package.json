@@ -8,8 +8,7 @@
     "start:dist": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js testDist --silent",
     "build": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js build --silent",
     "build:verbose": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js build",
-    "build:disclaimer":
-      "yarn licenses generate-disclaimer --production >> DISCLAIMER.md",
+    "build:disclaimer": "yarn licenses generate-disclaimer --production >> DISCLAIMER.md",
     "precommit": "lint-staged"
   },
   "keywords": ["pulseshift", "OpenUI5", "ui5"],
@@ -31,6 +30,16 @@
   "homepage": "https://github.com/pulseshift/openui5-gulp-starter-kit#readme",
   "main": "src/index.hbs",
   "ui5": {
+    "cacheBuster": false,
+    "nwabapUpload": {
+      "conn": {
+        "server": "http://myserver:8000"
+      },
+      "auth": {
+        "user": "username",
+        "pwd": "password"
+      }
+    },
     "indexTitle": "UI5 Todo App",
     "src": "githubRelease",
     "srcLinks": {
@@ -69,7 +78,13 @@
     "apps": [
       {
         "name": "app.todo",
-        "path": "src/openui5-todo-app"
+        "path": "src/openui5-todo-app",
+        "nwabapDestination": {
+          "package": "$TMP",
+          "bspcontainer": "ZZ_UI5_LOCAL",
+          "bspcontainer_text": "UI5 upload local objects",
+          "langauage": "EN"
+        }
       }
     ],
     "libraries": [],
@@ -99,6 +114,7 @@
     "gulp-if": "^2.0.2",
     "gulp-imagemin": "^3.3.0",
     "gulp-less": "^3.3.2",
+    "gulp-nwabap-ui5uploader": "^0.4.1",
     "gulp-plumber": "^1.1.0",
     "gulp-pretty-data": "^0.2.0",
     "gulp-rename": "^1.2.2",
