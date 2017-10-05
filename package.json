@@ -9,6 +9,8 @@
     "build": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js build --silent",
     "build:verbose": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js build",
     "build:disclaimer": "yarn licenses generate-disclaimer --production >> DISCLAIMER.md",
+    "deploy": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js deploy --silent",
+    "deploy:verbose": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js deploy",
     "precommit": "lint-staged"
   },
   "keywords": ["pulseshift", "OpenUI5", "ui5"],
@@ -33,11 +35,14 @@
     "cacheBuster": false,
     "nwabapUpload": {
       "conn": {
-        "server": "http://myserver:8000"
+        "server": ""
       },
       "auth": {
-        "user": "username",
-        "pwd": "password"
+        "user": "",
+        "pwd": ""
+      },
+      "client": {
+        "useStrictSSL": "false"
       }
     },
     "indexTitle": "UI5 Todo App",

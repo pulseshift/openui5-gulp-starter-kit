@@ -70,7 +70,7 @@ spinner.print = sText => spinner.stopAndPersist({ text: sText })
 const SRC = 'src'
 // path to development directory
 const DEV = '.tmp'
-// path to ditribution direcory
+// path to ditribution directory
 const DIST = 'dist'
 // path to ui5 repository
 const UI5 = process.env.NODE_ENV === 'development' ? 'ui5' : 'ui5'
@@ -200,7 +200,6 @@ const build = gulp.series(
   ),
   gulp.parallel(ui5preloads, ui5LibPreloads),
   ui5cacheBust,
-  ui5Upload,
   logStatsDist
 )
 
@@ -241,6 +240,66 @@ function logStatsDist(done) {
   done()
 }
 export { build }
+
+/**
+ * Gulp 'deploy' task (distribution mode).
+ * @description Deploy the complete app to run in production environment.
+ * @public
+ */
+const deploy = gulp.series(
+  logStartDeploy,
+  // TODO: add test task to run qunit and opa5 tests
+  build,
+  ui5Upload,
+  logStatsDeploy
+)
+
+// log start deploy message and start spinner
+function logStartDeploy(done) {
+  spinner.print(' ')
+  spinner.start('Deployment start...')
+  done()
+}
+
+// log deploy statistics and stop spinner
+function logStatsDeploy(done) {
+  const sSourceID = pkg.ui5.src
+  const oSource = pkg.ui5.srcLinks[sSourceID]
+  const sUI5Version = oSource.version
+  const sBackendServer = pkg.ui5.nwabapUpload.conn.server
+  const sDevPackage = pkg.ui5.apps[0].nwabapDestination.package
+  const sBspContainer = pkg.ui5.apps[0].nwabapDestination.bspcontainer
+  const sBspContainerText = pkg.ui5.apps[0].nwabapDestination.bspcontainer_text
+  const sTransportNo = pkg.ui5.apps[0].nwabapDestination.transportno
+  const sOnlineUI5State =
+    !oSource.isArchive && oSource.isPrebuild ? '(remote)' : ''
+  const sUI5Details = !oSource.isPrebuild ? '(custom build)' : sOnlineUI5State
+
+  const iApps = (pkg.ui5.apps || []).length
+  const iThemes = (pkg.ui5.themes || []).length
+  const iLibs = (pkg.ui5.libraries || []).length
+
+  // print success message
+  spinner
+    .succeed('Deployment successfull.')
+    .print(' ')
+    .print(`Deployed entry: ${pkg.main}`)
+    .print(`Deployed to: ${sBackendServer}`)
+    .print(`           : ${sDevPackage}`)
+    .print(`           : ${sBspContainer}`)
+    .print(`           : ${sBspContainerText}`)
+    .print(`           : ${sTransportNo}`)
+    .print(' ')
+    .print(`UI5 Version: ${sUI5Version} ${sUI5Details}`)
+    .print(' ')
+    .print('UI5 assets created:')
+    .print(`\u{25FB}  ${iApps} app${iApps !== 1 ? 's' : ''}`)
+    .print(`\u{25FB}  ${iThemes} theme${iThemes !== 1 ? 's' : ''}`)
+    .print(`\u{25FB}  ${iLibs} librar${iLibs !== 1 ? 'ies' : 'y'}`)
+    .print(' ')
+  done()
+}
+export { deploy }
 
 /* ----------------------------------------------------------- *
  * watch files for changes
@@ -1194,7 +1253,8 @@ function ui5Upload() {
         .src([DIST])
         .pipe(
           ui5uploader({
-            root: `${DIST}/${oApp.path}`,
+            //TODO: get correct path dynamically
+            root: `${DIST}/openui5-todo-app`,
             // pass conn and auth config
             ...pkg.ui5.nwabapUpload,
             // pass nwabap bsp destination
