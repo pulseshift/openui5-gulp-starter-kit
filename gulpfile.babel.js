@@ -1241,29 +1241,23 @@ function ui5Upload() {
     )
   }
 
-  const aPreloadPromise = pkg.ui5.apps.map(oApp => {
-    // check if nwabap config is maintained
-    if (!oApp.nwabapDestination) {
-      return Promise.reject(
-        `Option 'nwabapDestination' config was not found for app ${oApp.name} in package.json`
-      )
-    }
-    return new Promise((resolve, reject) => {
-      gulp
-        .src([DIST])
-        .pipe(
-          ui5uploader({
-            //TODO: get correct path dynamically
-            root: `${DIST}/openui5-todo-app`,
-            // pass conn and auth config
-            ...pkg.ui5.nwabapUpload,
-            // pass nwabap bsp destination
-            ui5: oApp.nwabapDestination
-          })
-        )
-        .on('error', reject)
-        .on('end', resolve)
+  //check if nwabap config is maintained
+  if (!pkg.ui5.apps[0].nwabapDestination) {
+    return Promise.reject(
+      `Option 'nwabapDestination' config was not found for app ${pkg.ui5.apps[0]
+        .name} in package.json`
+    )
+  }
+
+  //TODO: switch hardcoded src path to dynamic
+  return gulp.src('dist/openui5-todo-app/**').pipe(
+    ui5uploader({
+      //TODO: switch hardcoded root path to dynamic
+      root: 'dist/openui5-todo-app',
+      // pass conn and auth config
+      ...pkg.ui5.nwabapUpload,
+      // pass nwabap bsp destination
+      ui5: pkg.ui5.apps[0].nwabapDestination
     })
-  })
-  return Promise.all(aPreloadPromise)
+  )
 }

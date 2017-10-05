@@ -35,14 +35,12 @@
     "cacheBuster": false,
     "nwabapUpload": {
       "conn": {
-        "server": ""
+        "server": "",
+        "useStrictSSL": false
       },
       "auth": {
         "user": "",
         "pwd": ""
-      },
-      "client": {
-        "useStrictSSL": "false"
       }
     },
     "indexTitle": "UI5 Todo App",
@@ -88,7 +86,8 @@
           "package": "$TMP",
           "bspcontainer": "ZZ_UI5_LOCAL",
           "bspcontainer_text": "UI5 upload local objects",
-          "langauage": "EN"
+          "langauage": "EN",
+          "calc_appindex": true
         }
       }
     ],
