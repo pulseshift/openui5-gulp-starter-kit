@@ -1241,23 +1241,31 @@ function ui5Upload() {
     )
   }
 
-  //check if nwabap config is maintained
-  if (!pkg.ui5.apps[0].nwabapDestination) {
-    return Promise.reject(
-      `Option 'nwabapDestination' config was not found for app ${pkg.ui5.apps[0]
-        .name} in package.json`
-    )
-  }
+  const mapPathToDist = sPath => sPath.replace(new RegExp(`^${SRC}`), DIST)
+  const aDeployPromise = pkg.ui5.apps.map(oApp => {
+    // check if nwabap config is maintained
+    if (!oApp.nwabapDestination) {
+      return Promise.reject(
+        `Option 'nwabapDestination' config was not found for app ${oApp.name} in package.json`
+      )
+    }
+    const sAppDistPath = mapPathToDist(oApp.path)
 
-  //TODO: switch hardcoded src path to dynamic
-  return gulp.src('dist/openui5-todo-app/**').pipe(
-    ui5uploader({
-      //TODO: switch hardcoded root path to dynamic
-      root: 'dist/openui5-todo-app',
-      // pass conn and auth config
-      ...pkg.ui5.nwabapUpload,
-      // pass nwabap bsp destination
-      ui5: pkg.ui5.apps[0].nwabapDestination
+    return new Promise((resolve, reject) => {
+      gulp
+        .src([`${sAppDistPath}/**`])
+        .pipe(
+          ui5uploader({
+            root: sAppDistPath,
+            // pass conn and auth config
+            ...pkg.ui5.nwabapUpload,
+            // pass nwabap bsp destination
+            ui5: oApp.nwabapDestination
+          })
+        )
+        .on('error', reject)
+        .on('end', resolve)
     })
-  )
+  })
+  return Promise.all(aDeployPromise)
 }

@@ -107,6 +107,14 @@ Afterwards, the production app build can be tested by run `yarn start:dist`. The
 
 Info: To get a more detailed logging, just use `yarn build:verbose` instead.
 
+Start deployment:
+_To upload all apps in `dist` to SAP NetWeaver._
+```
+yarn deploy
+```
+
+Info: To get a more detailed logging, just use `yarn deploy:verbose` instead.
+
 ### Contributing & Troubleshooting
 
 Contributions, questions and comments are all welcome and encouraged.
