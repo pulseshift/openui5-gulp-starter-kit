@@ -1275,7 +1275,7 @@ function ui5Upload() {
             ui5: oApp.nwabapDestination
           })
         )
-        .pipe(gulp.dest(DIST))
+        .pipe(gulp.dest(sAppDistPath))
         .on('error', reject)
         .on('end', resolve)
     })
