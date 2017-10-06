@@ -267,15 +267,12 @@ function logStatsDeploy(done) {
   const oSource = pkg.ui5.srcLinks[sSourceID]
   const sUI5Version = oSource.version
   const sBackendServer = pkg.ui5.nwabapUpload.conn.server
-  const sDevPackage = pkg.ui5.apps[0].nwabapDestination.package
-  const sBspContainer = pkg.ui5.apps[0].nwabapDestination.bspcontainer
-  const sBspContainerText = pkg.ui5.apps[0].nwabapDestination.bspcontainer_text
-  const sTransportNo = pkg.ui5.apps[0].nwabapDestination.transportno
   const sOnlineUI5State =
     !oSource.isArchive && oSource.isPrebuild ? '(remote)' : ''
   const sUI5Details = !oSource.isPrebuild ? '(custom build)' : sOnlineUI5State
 
-  const iApps = (pkg.ui5.apps || []).length
+  const aApps = pkg.ui5.apps || []
+  const iApps = aApps.length
   const iThemes = (pkg.ui5.themes || []).length
   const iLibs = (pkg.ui5.libraries || []).length
 
@@ -285,11 +282,26 @@ function logStatsDeploy(done) {
     .print(' ')
     .print(`Deployed entry:    ${pkg.main}`)
     .print(`ABAP Server:       ${sBackendServer}`)
-    .print(`ABAP Package:      ${sDevPackage}`)
-    .print(`BSP Container:     ${sBspContainer}`)
-    .print(`BSP Description:   ${sBspContainerText}`)
-    .print(`Transport Request: ${sTransportNo}`)
     .print(' ')
+    .print('Apps uploaded:')
+    .print(' ')
+
+  aApps.forEach(oApp => {
+    const sDevPackage = oApp.nwabapDestination.package
+    const sBspContainer = oApp.nwabapDestination.bspcontainer
+    const sBspContainerText = oApp.nwabapDestination.bspcontainer_text
+    const sTransportNo = oApp.nwabapDestination.transportno
+
+    spinner
+      .print(`App name:          ${oApp.name}`)
+      .print(`ABAP Package:      ${sDevPackage}`)
+      .print(`BSP Container:     ${sBspContainer}`)
+      .print(`BSP Description:   ${sBspContainerText}`)
+      .print(`Transport Request: ${sTransportNo}`)
+      .print(' ')
+  })
+
+  spinner
     .print(`UI5 Version: ${sUI5Version} ${sUI5Details}`)
     .print(' ')
     .print('UI5 assets created:')
