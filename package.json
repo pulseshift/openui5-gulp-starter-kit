@@ -2,19 +2,25 @@
   "name": "openui5-gulp-starter-kit",
   "version": "0.1.0",
   "description": "OpenUI5 template app build with gulp.",
+  "keywords": [
+    "pulseshift",
+    "OpenUI5",
+    "ui5"
+  ],
   "scripts": {
     "start": "NODE_ENV=development babel-node node_modules/gulp/bin/gulp.js --silent",
     "start:verbose": "NODE_ENV=development babel-node node_modules/gulp/bin/gulp.js",
     "start:dist": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js testDist --silent",
     "build": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js build --silent",
     "build:verbose": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js build",
-    "build:disclaimer":
-      "yarn licenses generate-disclaimer --production >> DISCLAIMER.md",
+    "build:disclaimer": "yarn licenses generate-disclaimer --production >> DISCLAIMER.md",
     "precommit": "lint-staged"
   },
-  "keywords": ["pulseshift", "OpenUI5", "ui5"],
   "lint-staged": {
-    "*.js": ["prettier --write --no-semi --single-quote", "git add"]
+    "*.js": [
+      "prettier --write --no-semi --single-quote",
+      "git add"
+    ]
   },
   "repository": {
     "url": "git+https://github.com/pulseshift/openui5-gulp-starter-kit.git",
@@ -32,7 +38,7 @@
   "main": "src/index.hbs",
   "ui5": {
     "indexTitle": "UI5 Todo App",
-    "src": "githubRelease",
+    "src": "cdn",
     "srcLinks": {
       "githubRelease": {
         "url": "https://github.com/SAP/openui5/archive/{{version}}.zip",
@@ -65,11 +71,15 @@
         "isArchive": false
       }
     },
+    "vendor": "src/openui5-todo-app/vendor",
     "theme": "sap_belize",
-    "apps": [
-      {
+    "apps": [{
         "name": "app.todo",
         "path": "src/openui5-todo-app"
+      },
+      {
+        "name": "app.vendor",
+        "path": "src/openui5-todo-app/vendor"
       }
     ],
     "libraries": [],
@@ -115,6 +125,14 @@
     "ora": "^1.3.0",
     "prettier": "^1.5.1",
     "ui5-cache-buster": "alpha",
-    "ui5-lib-util": "alpha"
+    "ui5-lib-util": "alpha",
+    "babelify": "^8.0.0",
+    "browserify": "^15.2.0",
+    "gulp-main-npm-files": "^1.0.5",
+    "vinyl-buffer": "^1.0.1",
+    "vinyl-source-stream": "^2.0.0"
+  },
+  "dependencies": {
+    "moment": "^2.20.1"
   }
 }

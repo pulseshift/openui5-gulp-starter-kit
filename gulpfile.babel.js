@@ -41,6 +41,11 @@ import commander from 'commander'
 import server from 'browser-sync'
 import handlebars from 'handlebars'
 import gulpHandlebars from 'gulp-handlebars-html'
+import browserify from 'browserify'
+import mainNpmFiles from 'gulp-main-npm-files'
+import source from 'vinyl-source-stream'
+import buffer from 'vinyl-buffer'
+import babelify from 'babelify'
 
 /*
  * SETUP SCRIPT RUNTIME ENVIRONMENT
@@ -128,7 +133,7 @@ const paths = {
 const start = gulp.series(
   logStart,
   clean,
-  gulp.series(downloadOpenUI5, buildOpenUI5),
+  gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), loadDependencies),
   copyUi5Theme,
   gulp.parallel(
     entry,
@@ -187,7 +192,10 @@ export default start
 const build = gulp.series(
   logStartDist,
   cleanDist,
-  gulp.series(downloadOpenUI5, buildOpenUI5),
+  gulp.parallel(
+    gulp.series(downloadOpenUI5, buildOpenUI5),
+    loadDependenciesDist
+  ),
   copyUi5Theme,
   gulp.parallel(
     entryDist,
@@ -1133,6 +1141,128 @@ function ui5ThemeStylesDist() {
                 .on('error', reject)
             )
         )
+}
+
+/* ----------------------------------------------------------- *
+ * load dependencies
+ * ----------------------------------------------------------- */
+
+// [helper function]
+function getExposedModuleName(sModule) {
+  switch (sModule) {
+    case 'lodash':
+      return '_'
+    case 'velocity-animate':
+      return 'velocity'
+    default:
+      return sModule.replace('-', '_')
+  }
+}
+
+// [development build]
+function loadDependencies() {
+  const aDependencies = mainNpmFiles()
+  const sVendorPath = pkg.ui5.vendor
+
+  const aEntryBuilds = aDependencies.map(
+    sEntry =>
+      new Promise((resolve, reject) => {
+        const sModuleName = sEntry.split('/node_modules/')[1].split('/')[0]
+        return (
+          browserify({
+            entries: sEntry,
+            standalone: getExposedModuleName(sModuleName)
+          })
+            // babel will run with the settings defined in `.babelrc` file
+            .transform(babelify)
+            .bundle()
+            .pipe(source('module.js'))
+            .pipe(buffer())
+            // save dependency based on module name (axios -> axios.js)
+            .pipe(
+              rename(oPath => {
+                oPath.basename = sModuleName
+              })
+            )
+            .pipe(gulp.dest(sVendorPath))
+            .on('end', resolve)
+            .on('error', reject)
+        )
+      })
+  )
+
+  const aStyleCopy = aDependencies.map(
+    sEntry =>
+      new Promise((resolve, reject) => {
+        const sStylesheetName = sEntry.replace(/\.js$/, '.css')
+        return fs.existsSync(path.resolve(__dirname, sStylesheetName))
+          ? gulp
+              .src([sStylesheetName])
+              .pipe(gulp.dest(sVendorPath))
+              .on('end', resolve)
+              .on('error', reject)
+          : resolve()
+      })
+  )
+
+  return Promise.all([].concat(aEntryBuilds).concat(aStyleCopy))
+}
+
+// [production build]
+function loadDependenciesDist() {
+  const aDependencies = mainNpmFiles()
+  const sVendorPath = pkg.ui5.vendor
+
+  const aEntryBuilds = aDependencies.map(
+    sEntry =>
+      new Promise((resolve, reject) => {
+        const sModuleName = sEntry.split('/node_modules/')[1].split('/')[0]
+        return (
+          browserify({
+            entries: sEntry,
+            standalone: getExposedModuleName(sModuleName)
+          })
+            // babel will run with the settings defined in `.babelrc` file
+            .transform(babelify)
+            .bundle()
+            .pipe(source('module.js'))
+            .pipe(buffer())
+            // save dependency based on module name (axios -> axios.js)
+            .pipe(
+              rename(oPath => {
+                oPath.basename = sModuleName
+              })
+            )
+            // minify scripts
+            .pipe(uglify())
+            .pipe(gulp.dest(sVendorPath))
+            .on('end', resolve)
+            .on('error', reject)
+        )
+      })
+  )
+
+  const aStyleCopy = aDependencies.map(
+    sEntry =>
+      new Promise((resolve, reject) => {
+        const sStylesheetName = sEntry.replace(/\.js$/, '.css')
+        return fs.existsSync(path.resolve(__dirname, sStylesheetName))
+          ? gulp
+              .src([sStylesheetName])
+              // minify CSS
+              .pipe(
+                cleanCSS({
+                  level: 2
+                })
+              )
+              .pipe(gulp.dest(sVendorPath))
+              .on('end', resolve)
+              .on('error', reject)
+          : resolve()
+      })
+  )
+
+  return Promise.all([].concat(aEntryBuilds).concat(aStyleCopy))
 }
 
 /* ----------------------------------------------------------- *
