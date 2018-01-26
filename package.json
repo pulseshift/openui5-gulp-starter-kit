@@ -71,15 +71,16 @@
         "isArchive": false
       }
     },
-    "vendor": "src/openui5-todo-app/vendor",
+    "libs": "src/openui5-todo-app/libs",
     "theme": "sap_belize",
-    "apps": [{
+    "apps": [
+      {
         "name": "app.todo",
         "path": "src/openui5-todo-app"
       },
       {
-        "name": "app.vendor",
-        "path": "src/openui5-todo-app/vendor"
+        "name": "app.libs",
+        "path": "src/openui5-todo-app/libs"
       }
     ],
     "libraries": [],
@@ -93,7 +94,9 @@
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "babel-register": "^6.24.1",
+    "babelify": "^8.0.0",
     "browser-sync": "^2.18.12",
+    "browserify": "^15.2.0",
     "commander": "^2.10.0",
     "del": "^3.0.0",
     "eslint": "^4.8.0",
@@ -109,6 +112,7 @@
     "gulp-if": "^2.0.2",
     "gulp-imagemin": "^3.3.0",
     "gulp-less": "^3.3.2",
+    "gulp-main-npm-files": "^1.0.5",
     "gulp-plumber": "^1.1.0",
     "gulp-pretty-data": "^0.2.0",
     "gulp-rename": "^1.2.2",
@@ -126,9 +130,6 @@
     "prettier": "^1.5.1",
     "ui5-cache-buster": "alpha",
     "ui5-lib-util": "alpha",
-    "babelify": "^8.0.0",
-    "browserify": "^15.2.0",
-    "gulp-main-npm-files": "^1.0.5",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0"
   },
