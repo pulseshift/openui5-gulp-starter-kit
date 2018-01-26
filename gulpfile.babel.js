@@ -174,7 +174,7 @@ function logStatsCommons() {
   const iThemes = (pkg.ui5.themes || []).length
   const iLibs = (pkg.ui5.libraries || []).length
 
-  const sVendorLibsPath = pkg.ui5.libs
+  const sVendorLibsPath = pkg.ui5.vendor ? pkg.ui5.vendor.path : ''
   const aVendorLibs = mainNpmFiles()
 
   if (aVendorLibs.length > 0) {
@@ -254,7 +254,6 @@ function logStatsDist(done) {
     .print(' ')
     .print(`Build entry: ${pkg.main}`)
     .print(`Build output: ${path.resolve(__dirname, DIST)}`)
-    .print(' ')
   logStatsCommons()
   done()
 }
@@ -456,6 +455,7 @@ function cleanDist() {
 function getHandlebarsProps(sEntryHTMLPath) {
   const aResourceRootsSrc = []
     .concat(pkg.ui5.apps)
+    .concat(pkg.ui5.vendor ? [pkg.ui5.vendor] : [])
     .concat(pkg.ui5.libraries)
     .concat(pkg.ui5.assets)
 
@@ -1259,12 +1259,19 @@ function getExposedModuleName(sModule) {
 // [development build]
 function loadDependencies() {
   try {
-    if (!pkg.ui5.libs || pkg.ui5.libs.length === 0) {
+    if (
+      !pkg.ui5.vendor ||
+      !pkg.ui5.vendor.path ||
+      pkg.ui5.vendor.path.length === 0
+    ) {
       return Promise.resolve()
     }
 
     const aDependencies = mainNpmFiles()
-    const sVendorLibsPath = pkg.ui5.libs
+    const sVendorLibsPath = (pkg.ui5.vendor ? pkg.ui5.vendor.path : '').replace(
+      new RegExp(`^${SRC}`),
+      DEV
+    )
 
     const aEntryBuilds = aDependencies.map(
       sEntry =>
@@ -1316,12 +1323,19 @@ function loadDependencies() {
 // [production build]
 function loadDependenciesDist() {
   try {
-    if (!pkg.ui5.libs || pkg.ui5.libs.length === 0) {
+    if (
+      !pkg.ui5.vendor ||
+      !pkg.ui5.vendor.path ||
+      pkg.ui5.vendor.path.length === 0
+    ) {
       return Promise.resolve()
     }
 
     const aDependencies = mainNpmFiles()
-    const sVendorLibsPath = pkg.ui5.libs.replace(new RegExp(`^${SRC}`), DIST)
+    const sVendorLibsPath = (pkg.ui5.vendor ? pkg.ui5.vendor.path : '').replace(
+      new RegExp(`^${SRC}`),
+      DIST
+    )
 
     const aEntryBuilds = aDependencies.map(
       sEntry =>
