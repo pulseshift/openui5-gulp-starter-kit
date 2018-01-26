@@ -96,5 +96,11 @@
         </VBox>
       </VBox>
     </content>
+    <footer>
+			<Toolbar design="Transparent">
+				<ToolbarSpacer/>
+				<Label class="sapUiSmallMarginEnd" text="{view>/Main/timestamp}"/>
+			</Toolbar>
+		</footer>
   </Page>
 </mvc:View>

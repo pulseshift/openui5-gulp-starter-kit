@@ -61,9 +61,9 @@
                 }
               : function(obj) {
                   return obj &&
-                  typeof Symbol === 'function' &&
-                  obj.constructor === Symbol &&
-                  obj !== Symbol.prototype
+                    typeof Symbol === 'function' &&
+                    obj.constructor === Symbol &&
+                    obj !== Symbol.prototype
                     ? 'symbol'
                     : typeof obj
                 }
@@ -560,11 +560,12 @@
                 return format
               }
 
-              this._longDateFormat[
-                key
-              ] = formatUpper.replace(/MMMM|MM|DD|dddd/g, function(val) {
-                return val.slice(1)
-              })
+              this._longDateFormat[key] = formatUpper.replace(
+                /MMMM|MM|DD|dddd/g,
+                function(val) {
+                  return val.slice(1)
+                }
+              )
 
               return this._longDateFormat[key]
             }
@@ -668,7 +669,9 @@
                 sign = number >= 0
               return (
                 (sign ? (forceSign ? '+' : '') : '-') +
-                Math.pow(10, Math.max(0, zerosToFill)).toString().substr(1) +
+                Math.pow(10, Math.max(0, zerosToFill))
+                  .toString()
+                  .substr(1) +
                 absNumber
               )
             }
@@ -1048,7 +1051,7 @@
               year += (month - modMonth) / 12
               return modMonth === 1
                 ? isLeapYear(year) ? 29 : 28
-                : 31 - modMonth % 7 % 2
+                : 31 - (modMonth % 7) % 2
             }
 
             // FORMATTING
@@ -3450,8 +3453,14 @@
 
             function isDaylightSavingTime() {
               return (
-                this.utcOffset() > this.clone().month(0).utcOffset() ||
-                this.utcOffset() > this.clone().month(5).utcOffset()
+                this.utcOffset() >
+                  this.clone()
+                    .month(0)
+                    .utcOffset() ||
+                this.utcOffset() >
+                  this.clone()
+                    .month(5)
+                    .utcOffset()
               )
             }
 
@@ -3583,7 +3592,12 @@
 
               res.months =
                 other.month() - base.month() + (other.year() - base.year()) * 12
-              if (base.clone().add(res.months, 'M').isAfter(other)) {
+              if (
+                base
+                  .clone()
+                  .add(res.months, 'M')
+                  .isAfter(other)
+              ) {
                 --res.months
               }
 
@@ -3716,7 +3730,10 @@
                 return this.valueOf() > localInput.valueOf()
               } else {
                 return (
-                  localInput.valueOf() < this.clone().startOf(units).valueOf()
+                  localInput.valueOf() <
+                  this.clone()
+                    .startOf(units)
+                    .valueOf()
                 )
               }
             }
@@ -3733,7 +3750,9 @@
                 return this.valueOf() < localInput.valueOf()
               } else {
                 return (
-                  this.clone().endOf(units).valueOf() < localInput.valueOf()
+                  this.clone()
+                    .endOf(units)
+                    .valueOf() < localInput.valueOf()
                 )
               }
             }
@@ -3762,8 +3781,13 @@
               } else {
                 inputMs = localInput.valueOf()
                 return (
-                  this.clone().startOf(units).valueOf() <= inputMs &&
-                  inputMs <= this.clone().endOf(units).valueOf()
+                  this.clone()
+                    .startOf(units)
+                    .valueOf() <= inputMs &&
+                  inputMs <=
+                    this.clone()
+                      .endOf(units)
+                      .valueOf()
                 )
               }
             }
@@ -3890,11 +3914,11 @@
             }
 
             /**
-     * Return a human readable representation of a moment that can
-     * also be evaluated to get a new moment which is the same
-     *
-     * @link https://nodejs.org/dist/latest/docs/api/util.html#util_custom_inspect_function_on_objects
-     */
+             * Return a human readable representation of a moment that can
+             * also be evaluated to get a new moment which is the same
+             *
+             * @link https://nodejs.org/dist/latest/docs/api/util.html#util_custom_inspect_function_on_objects
+             */
             function inspect() {
               if (!this.isValid()) {
                 return 'moment.invalid(/* ' + this._i + ' */)'
@@ -4727,7 +4751,7 @@
               ordinal: function ordinal(number) {
                 var b = number % 10,
                   output =
-                    toInt(number % 100 / 10) === 1
+                    toInt((number % 100) / 10) === 1
                       ? 'th'
                       : b === 1 ? 'st' : b === 2 ? 'nd' : b === 3 ? 'rd' : 'th'
                 return number + output
@@ -4898,7 +4922,7 @@
               return (
                 this._milliseconds +
                 this._days * 864e5 +
-                this._months % 12 * 2592e6 +
+                (this._months % 12) * 2592e6 +
                 toInt(this._months / 12) * 31536e6
               )
             }
@@ -4981,16 +5005,16 @@
               var years = round(duration.as('y'))
 
               var a = (seconds <= thresholds.ss && ['s', seconds]) ||
-              (seconds < thresholds.s && ['ss', seconds]) ||
-              (minutes <= 1 && ['m']) ||
-              (minutes < thresholds.m && ['mm', minutes]) ||
-              (hours <= 1 && ['h']) ||
-              (hours < thresholds.h && ['hh', hours]) ||
-              (days <= 1 && ['d']) ||
-              (days < thresholds.d && ['dd', days]) ||
-              (months <= 1 && ['M']) ||
-              (months < thresholds.M && ['MM', months]) ||
-              (years <= 1 && ['y']) || ['yy', years]
+                (seconds < thresholds.s && ['ss', seconds]) ||
+                (minutes <= 1 && ['m']) ||
+                (minutes < thresholds.m && ['mm', minutes]) ||
+                (hours <= 1 && ['h']) ||
+                (hours < thresholds.h && ['hh', hours]) ||
+                (days <= 1 && ['d']) ||
+                (days < thresholds.d && ['dd', days]) ||
+                (months <= 1 && ['M']) ||
+                (months < thresholds.M && ['MM', months]) ||
+                (years <= 1 && ['y']) || ['yy', years]
 
               a[2] = withoutSuffix
               a[3] = +posNegDuration > 0

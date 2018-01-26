@@ -52,7 +52,10 @@ import babelify from 'babelify'
  */
 
 // parse program commands
-commander.version(pkg.version).option('--silent').parse(process.argv)
+commander
+  .version(pkg.version)
+  .option('--silent')
+  .parse(process.argv)
 
 const hdlbars = gulpHandlebars(handlebars)
 const spinner = ora()
@@ -84,7 +87,11 @@ const aApps = pkg.ui5.apps || []
 const aThemes = pkg.ui5.themes || []
 const aLibs = pkg.ui5.libraries || []
 const aAssets = pkg.ui5.assets || []
-const aModules = [].concat(aApps).concat(aThemes).concat(aLibs).concat(aAssets)
+const aModules = []
+  .concat(aApps)
+  .concat(aThemes)
+  .concat(aLibs)
+  .concat(aAssets)
 
 // paths used in our app
 const paths = {
@@ -386,7 +393,9 @@ export function buildOpenUI5() {
     const oBuildOptions = {
       onProgress(iStep, iTotalSteps, oStepDetails) {
         // update spinner state
-        spinner.text = `Build UI5... [${iStep}/${iTotalSteps}] (${oStepDetails.name})`
+        spinner.text = `Build UI5... [${iStep}/${iTotalSteps}] (${
+          oStepDetails.name
+        })`
       }
     }
 
@@ -1250,6 +1259,10 @@ function getExposedModuleName(sModule) {
 // [development build]
 function loadDependencies() {
   try {
+    if (!pkg.ui5.libs || pkg.ui5.libs.length === 0) {
+      return Promise.resolve()
+    }
+
     const aDependencies = mainNpmFiles()
     const sVendorLibsPath = pkg.ui5.libs
 
@@ -1303,8 +1316,12 @@ function loadDependencies() {
 // [production build]
 function loadDependenciesDist() {
   try {
+    if (!pkg.ui5.libs || pkg.ui5.libs.length === 0) {
+      return Promise.resolve()
+    }
+
     const aDependencies = mainNpmFiles()
-    const sVendorPath = pkg.ui5.vendor
+    const sVendorLibsPath = pkg.ui5.libs.replace(new RegExp(`^${SRC}`), DIST)
 
     const aEntryBuilds = aDependencies.map(
       sEntry =>
@@ -1328,7 +1345,7 @@ function loadDependenciesDist() {
               )
               // minify scripts
               .pipe(uglify())
-              .pipe(gulp.dest(sVendorPath))
+              .pipe(gulp.dest(sVendorLibsPath))
               .on('end', resolve)
               .on('error', reject)
           )
@@ -1348,7 +1365,7 @@ function loadDependenciesDist() {
                     level: 2
                   })
                 )
-                .pipe(gulp.dest(sVendorPath))
+                .pipe(gulp.dest(sVendorLibsPath))
                 .on('end', resolve)
                 .on('error', reject)
             : resolve()
