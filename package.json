@@ -8,6 +8,7 @@
     "ui5"
   ],
   "scripts": {
+    "test": "yarn eslint ./src/openui5-todo-app --ext .js --cache",
     "start": "NODE_ENV=development babel-node node_modules/gulp/bin/gulp.js --silent",
     "start:verbose": "NODE_ENV=development babel-node node_modules/gulp/bin/gulp.js",
     "start:dist": "NODE_ENV=production babel-node node_modules/gulp/bin/gulp.js testDist --silent",
@@ -71,16 +72,15 @@
         "isArchive": false
       }
     },
-    "libs": "src/openui5-todo-app/libs",
+    "libs": "src/libs",
     "theme": "sap_belize",
-    "apps": [
-      {
+    "apps": [{
         "name": "app.todo",
         "path": "src/openui5-todo-app"
       },
       {
         "name": "app.libs",
-        "path": "src/openui5-todo-app/libs"
+        "path": "src/libs"
       }
     ],
     "libraries": [],
