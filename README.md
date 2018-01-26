@@ -52,6 +52,7 @@ Furthermore you can configure for each OpenUI5 app component an own BSP Destinat
 ## Quickstart
 
 [Download](https://github.com/pulseshift/openui5-gulp-starter-kit/archive/master.zip) or clone this repository:
+
 ```
 git clone git@github.com:pulseshift/openui5-gulp-starter-kit.git
 ```
@@ -59,11 +60,14 @@ git clone git@github.com:pulseshift/openui5-gulp-starter-kit.git
 Please ensure that you have installed [node](https://nodejs.org/en/) and [yarn](https://yarnpkg.com/en/docs/install) before you continue.
 
 Install dependencies:
+
 ```
 yarn
 ```
+
 Start developing:
 _Will build all resources start watcher task and start a HTTP server_
+
 ```
 yarn start
 ```
@@ -74,9 +78,14 @@ Info: To get a more detailed logging, just use `yarn start:verbose` instead.
 
 ## Overview
 
-*OpenUI5 Starter Kit* is an opinionated to-do app example as template for OpenUI5 web development. Containing a modern build infrastructure, tools and a set of best practices for building a great development experience and helping you to stay productive.
+_OpenUI5 Starter Kit_ is an opinionated to-do app example as template for OpenUI5 web development. Containing a modern build infrastructure, tools and a set of best practices for building a great development experience and helping you to stay productive.
 
 > A solid starting point for both professionals and newcomers to OpenUI5.
+
+## Other branches
+
+Please see also the seperated branches of this project, at the time these are:
+* [nwabap](https://github.com/pulseshift/openui5-gulp-starter-kit/tree/nwabap) is the OpenUI5 Starter Kit branch which allows a developer to upload SAPUI5/OpenUI5 sources into a SAP NetWeaver ABAP system as part of the Gulp task chain
 
 ### Features
 
@@ -89,7 +98,7 @@ Info: To get a more detailed logging, just use `yarn start:verbose` instead.
 | Live Browser Reloading                 | Reload the browser in real-time anytime an edit is made without the need for an extension. (Run `yarn start` and edit your files)                                                                                                                           |
 | Cross-device Synchronization           | Synchronize clicks, scrolls, forms and live-reload across multiple devices as you edit your project. Powered by [BrowserSync](http://browsersync.io). (Run `yarn start` and open up the IP provided on other devices on your network)                       |
 | Production ready builds                     | Pre-configured build pipeline to create optimized assets, UI5 pre-loads etc. just as you would expect from a state of the art build process. All kind of UI5 asets are supported: App Components, Custom Themes, Control Libraries and non-UI5 assets roots. The structure of your project can be configured in your `package.json` in section `ui5`. _A detailed documentation of all options will follow soon._                                                                                                                                               |
-| ⚡️ Reliable UI5 Cache-Buster                     | Ensure your users are always enjoying the latest version of your app. OpenUI5 provides only [solutions proprietary for SAP Gateway and SAP Cloud Platform](https://openui5.hana.ondemand.com/#docs/guide/91f080966f4d1014b6dd926db0e91070.html). In this project, we added a more reliable mechanism that is open source and available for any environment. But much more important, with our Gulp build script, it works right out of the box. **Info: The cache buster is not supported in combination with SAP NetWeaver upload, yet.**                                                                                                                                              |
+| ⚡️ Reliable UI5 Cache-Buster                     | Ensure your users are always enjoying the latest version of your app. OpenUI5 provides only [solutions proprietary for SAP Gateway and SAP Cloud Platform](https://openui5.hana.ondemand.com/#docs/guide/91f080966f4d1014b6dd926db0e91070.html). In this project, we added a more reliable mechanism that is open source and available for any environment. But much more important, with our Gulp build script, it works right out of the box.                                                                                                                                              |
 | A Hackable UI5 Build Process                     | Define in your `package.json` the source of your OpenUI5 library. Supported options are online CDN link, download URL of a prebuild library or a GitHub release link of OpenUI5. In all cases, the build process will handle the download, unzip and OpenUI5 build task by its own. Lean back and wait relaxed.                                                                                                                                            |
 | Pre-configured linter (ESLint)                     | [ESLint](https://eslint.org) is a pluggable linting utility for JavaScript. It is pre-configured to work reliable and hand in hand with babel and prettier.                                                                                                                                           |
 
@@ -99,6 +108,7 @@ Info: To get a more detailed logging, just use `yarn start:verbose` instead.
 
 Start build:
 _Will create a `dist` directory in your project root._
+
 ```
 yarn build
 ```
@@ -106,14 +116,6 @@ yarn build
 Afterwards, the production app build can be tested by run `yarn start:dist`. The app should open in your browser automatically, otherwise open: `http://localhost:3000`
 
 Info: To get a more detailed logging, just use `yarn build:verbose` instead.
-
-Start deployment:
-_To upload all apps in `dist` to SAP NetWeaver._
-```
-yarn deploy
-```
-
-Info: To get a more detailed logging, just use `yarn deploy:verbose` instead.
 
 ### Contributing & Troubleshooting
 
@@ -126,14 +128,14 @@ Check our [current issues](https://github.com/pulseshift/openui5-gulp-starter-ki
 Here is a brief overview on what we are working right know and what will follow, soon. We are interested to hear your opinion on what should follow next.
 
 Current idea backlog (unordered):
-- Add a further project based on Webpack
-- Add Facebooks flow type system with help of vagrant to support Windows machines, too
-- Unit test and browser test framework
-- Build process for custom UI5 control libraries [available as BETA]
-- Build process for custom UI5 themes [available as BETA]
-- Documentation generation via JSDoc
-- Optimized OpenUI5 library modules (containing only these controls you used)
-- I18N helper integration
+
+* Add a further project based on Webpack
+* Add Facebooks flow type system with help of vagrant to support Windows machines, too
+* Unit test and browser test framework
+* Documentation generation via JSDoc
+* Optimized OpenUI5 library modules (containing only these controls you used)
+* I18N helper integration
+* Detailed README for all package.json (section ui5) configuration options
 
 ### Credits
 
