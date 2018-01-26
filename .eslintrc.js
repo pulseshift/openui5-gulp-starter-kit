@@ -33,9 +33,6 @@ module.exports = {
   globals: {
     ui5: false,
     sap: false,
-    less: false,
-    c3: false,
-    d3: false,
-    _: false
+    moment: false
   }
 }

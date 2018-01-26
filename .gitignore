@@ -13,6 +13,7 @@
 /.tmp/
 /.maps/
 /.download/
+.eslintcache
 
 ### Node ###
 node_modules/
