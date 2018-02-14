@@ -10,6 +10,10 @@ notifications:
 node_js:
   - "8"
 
+# skip fetching the git-lfs files
+git:
+  lfs_skip_smudge: true
+
 cache:
   yarn: true
   directories:
