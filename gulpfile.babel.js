@@ -1396,6 +1396,10 @@ function ui5cacheBust() {
     // update spinner state
     spinner.text = 'Run cache buster...'
 
+    if (pkg.ui5.cacheBuster === false) {
+      return Promise.resolve('Cache buster is deactivated.')
+    }
+
     return paths.cacheBuster.src.length === 0
       ? Promise.resolve()
       : gulp

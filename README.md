@@ -80,6 +80,9 @@ _Attention: comments are only for explanation, tehy can't be used in package.jso
 
 ```javascript
 {
+  // turn cache buster on to invalidate the users browser cache automatically for changed files
+  "cacheBuster": true,
+
   // path to an handlebars file used to create the index.html file of this project
   "main": "src/index.hbs",
 
