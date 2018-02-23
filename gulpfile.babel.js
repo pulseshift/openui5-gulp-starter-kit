@@ -1318,14 +1318,14 @@ function ui5ThemeStylesDist() {
 // [helper function]
 function getExposedModuleName(sModule) {
   switch (sModule) {
-    // define exceptions here
-    case 'lodash':
-      return '_'
+    // define exceptions here, e.g.:
+    // case 'lodash':
+    //   return '_'
     default:
       // turn to camel case (e.g. "ok js", "ok-js", "ok_js" become all "okJs")
       return sModule
-        .replace(/[\s-_](.)/g, $1 => $1.toUpperCase())
-        .replace(/[\s-_]/g, '')
+        .replace(/[\s-_.](.)/g, $1 => $1.toUpperCase())
+        .replace(/[\s-_.]/g, '')
         .replace(/^(.)/, $1 => $1.toLowerCase())
   }
 }
@@ -1342,7 +1342,8 @@ function loadDependencies() {
     }
 
     const aDependencies = mainNpmFiles()
-    const sVendorLibsPath = (pkg.ui5.vendor ? pkg.ui5.vendor.path : '').replace(
+    const sVendorLibsPathSrc = pkg.ui5.vendor ? pkg.ui5.vendor.path : ''
+    const sVendorLibsPathDev = sVendorLibsPathSrc.replace(
       new RegExp(`^${SRC}`),
       DEV
     )
@@ -1360,15 +1361,10 @@ function loadDependencies() {
               // babel will run with the settings defined in `.babelrc` file
               .transform(babelify)
               .bundle()
-              .pipe(source('module.js'))
+              .pipe(source(`${sModuleName}.js`))
               .pipe(buffer())
-              // save dependency based on module name (axios -> axios.js)
-              .pipe(
-                rename(oPath => {
-                  oPath.basename = sModuleName
-                })
-              )
-              .pipe(gulp.dest(sVendorLibsPath))
+              .pipe(gulp.dest(sVendorLibsPathSrc))
+              .pipe(gulp.dest(sVendorLibsPathDev))
               .on('end', resolve)
               .on('error', reject)
           )
@@ -1382,7 +1378,8 @@ function loadDependencies() {
           return fs.existsSync(path.resolve(__dirname, sStylesheetName))
             ? gulp
                 .src([sStylesheetName])
-                .pipe(gulp.dest(sVendorLibsPath))
+                .pipe(gulp.dest(sVendorLibsPathSrc))
+                .pipe(gulp.dest(sVendorLibsPathDev))
                 .on('end', resolve)
                 .on('error', reject)
             : resolve()
@@ -1425,14 +1422,8 @@ function loadDependenciesDist() {
               // babel will run with the settings defined in `.babelrc` file
               .transform(babelify)
               .bundle()
-              .pipe(source('module.js'))
+              .pipe(source(`${sModuleName}.js`))
               .pipe(buffer())
-              // save dependency based on module name (axios -> axios.js)
-              .pipe(
-                rename(oPath => {
-                  oPath.basename = sModuleName
-                })
-              )
               // minify scripts
               .pipe(uglify())
               .pipe(gulp.dest(sVendorLibsPath))
