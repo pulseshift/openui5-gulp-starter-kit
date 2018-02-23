@@ -1247,12 +1247,15 @@ function ui5ThemeStylesDist() {
 // [helper function]
 function getExposedModuleName(sModule) {
   switch (sModule) {
+    // define exceptions here
     case 'lodash':
       return '_'
-    case 'velocity-animate':
-      return 'velocity'
     default:
-      return sModule.replace('-', '_')
+      // turn to camel case (e.g. "ok js", "ok-js", "ok_js" become all "okJs")
+      return sModule
+        .replace(/[\s-_](.)/g, $1 => $1.toUpperCase())
+        .replace(/[\s-_]/g, '')
+        .replace(/^(.)/, $1 => $1.toLowerCase())
   }
 }
 
