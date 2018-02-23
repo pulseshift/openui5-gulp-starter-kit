@@ -180,25 +180,24 @@ function logStatsCommons() {
   if (aVendorLibs.length > 0) {
     spinner
       .print(' ')
-      .print(`Dependencies (vendor libraries) loaded into: ${sVendorLibsPath}`)
+      .succeed(
+        `Dependencies (vendor libraries) loaded into: ${sVendorLibsPath}`
+      )
 
     aVendorLibs.forEach(sEntry => {
       const sModuleName = sEntry.split('/node_modules/')[1].split('/')[0]
-      spinner.print(
-        `\u{25FB}  ${sModuleName} as ${getExposedModuleName(sModuleName)}`
-      )
+      spinner.print(`• ${sModuleName} as ${getExposedModuleName(sModuleName)}`)
     })
   }
 
   // print success message
+  spinner.print(' ')
+  spinner.succeed(`UI5 Version: ${sUI5Version} ${sUI5Details}`).print(' ')
   spinner
-    .print(' ')
-    .print(`UI5 Version: ${sUI5Version} ${sUI5Details}`)
-    .print(' ')
-    .print('UI5 assets created:')
-    .print(`\u{25FB}  ${iApps} app${iApps !== 1 ? 's' : ''}`)
-    .print(`\u{25FB}  ${iThemes} theme${iThemes !== 1 ? 's' : ''}`)
-    .print(`\u{25FB}  ${iLibs} librar${iLibs !== 1 ? 'ies' : 'y'}`)
+    .succeed('UI5 assets created:')
+    .print(`• ${iApps} app${iApps !== 1 ? 's' : ''}`)
+    .print(`• ${iThemes} theme${iThemes !== 1 ? 's' : ''}`)
+    .print(`• ${iLibs} librar${iLibs !== 1 ? 'ies' : 'y'}`)
     .print(' ')
 }
 
@@ -640,16 +639,12 @@ function assets() {
           )
           // don't exit the running watcher task on errors
           .pipe(plumber())
-          // optimize size and quality of images
-          .pipe(
-            gulpif(
-              /.*\.(jpg|jpeg|png)$/,
-              imagemin({
-                progressive: true,
-                interlaced: true
-              })
-            )
-          )
+          // do not optimize size and quality of images in dev mode
+
+          // transpile JS: babel will run with the settings defined in `.babelrc` file
+          .pipe(gulpif(/.*\.js$/, sourcemaps.init()))
+          .pipe(gulpif(/.*\.js$/, babel()))
+          .pipe(gulpif(/.*\.js$/, sourcemaps.write('../.maps')))
           .pipe(gulp.dest(DEV))
   } catch (error) {
     spinner.fail(error)
@@ -698,6 +693,8 @@ function assetsDist() {
               })
             )
           )
+          // transpile JS: babel will run with the settings defined in `.babelrc` file
+          .pipe(gulpif(/.*\.js$/, babel()))
           // minify JS
           .pipe(gulpif(/.*\.js$/, uglify()))
           .pipe(gulp.dest(DIST))
@@ -752,6 +749,7 @@ function scriptsDist() {
               return oFile
             })
           )
+
           // minify scripts
           .pipe(uglify())
           .pipe(gulp.dest(DIST))
