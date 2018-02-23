@@ -1,6 +1,6 @@
 {
   "name": "openui5-gulp-starter-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenUI5 template app build with gulp.",
   "keywords": [
     "pulseshift",
@@ -77,10 +77,12 @@
       "path": "src/libs"
     },
     "theme": "sap_belize",
-    "apps": [{
-      "name": "app.todo",
-      "path": "src/openui5-todo-app"
-    }],
+    "apps": [
+      {
+        "name": "app.todo",
+        "path": "src/openui5-todo-app"
+      }
+    ],
     "libraries": [],
     "themes": [],
     "assets": []
