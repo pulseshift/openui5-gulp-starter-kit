@@ -1280,10 +1280,11 @@ function loadDependencies() {
       sEntry =>
         new Promise((resolve, reject) => {
           const sModuleName = sEntry.split('/node_modules/')[1].split('/')[0]
+          const sGlobalname = getExposedModuleName(sModuleName)
           return (
             browserify({
               entries: sEntry,
-              standalone: getExposedModuleName(sModuleName)
+              standalone: sGlobalname
             })
               // babel will run with the settings defined in `.babelrc` file
               .transform(babelify)
@@ -1344,10 +1345,11 @@ function loadDependenciesDist() {
       sEntry =>
         new Promise((resolve, reject) => {
           const sModuleName = sEntry.split('/node_modules/')[1].split('/')[0]
+          const sGlobalname = getExposedModuleName(sModuleName)
           return (
             browserify({
               entries: sEntry,
-              standalone: getExposedModuleName(sModuleName)
+              standalone: sGlobalname
             })
               // babel will run with the settings defined in `.babelrc` file
               .transform(babelify)
