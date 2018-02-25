@@ -1,8 +1,8 @@
+/* @flow */
 /* eslint-env node */
 
 /**
  *
- *  OpenUI5 Gulp Starter Kit
  *  Copyright 2017 PulseShift GmbH. All rights reserved.
  *
  *  Licensed under the MIT License.
@@ -30,8 +30,13 @@ import less from 'gulp-less'
 import tap from 'gulp-tap'
 import sourcemaps from 'gulp-sourcemaps'
 import ui5preload from 'gulp-ui5-preload'
+import mainNpmFiles from 'gulp-main-npm-files'
 import ui5Bust from 'ui5-cache-buster'
 import { ui5Download, ui5Build, ui5CompileLessLib } from 'ui5-lib-util'
+import browserify from 'browserify'
+import source from 'vinyl-source-stream'
+import buffer from 'vinyl-buffer'
+import babelify from 'babelify'
 import LessAutoprefix from 'less-plugin-autoprefix'
 import ora from 'ora'
 import del from 'del'
@@ -41,11 +46,12 @@ import commander from 'commander'
 import server from 'browser-sync'
 import handlebars from 'handlebars'
 import gulpHandlebars from 'gulp-handlebars-html'
-import browserify from 'browserify'
-import mainNpmFiles from 'gulp-main-npm-files'
-import source from 'vinyl-source-stream'
-import buffer from 'vinyl-buffer'
-import babelify from 'babelify'
+import favicons from 'gulp-favicons'
+import gzip from 'gulp-gzip'
+import brotli from 'gulp-brotli'
+import gzipStaticMiddleware from 'connect-gzip-static'
+
+// TODO: because build script becomes so feature rich it should be split into sub modules
 
 /*
  * SETUP SCRIPT RUNTIME ENVIRONMENT
@@ -67,11 +73,16 @@ handlebars.registerHelper('secure', function(str) {
 
 // switch between gulp log and custom log
 spinner.enabled = commander.silent
-spinner.print = sText => spinner.stopAndPersist({ text: sText })
+spinner.print = sText =>
+  spinner.stopAndPersist({
+    text: sText
+  })
 
 /*
  * CONFIGURATION
  */
+
+const IS_DEV_MODE = process.env.NODE_ENV === 'development'
 
 // path to source directory
 const SRC = 'src'
@@ -80,18 +91,55 @@ const DEV = '.tmp'
 // path to ditribution direcory
 const DIST = 'dist'
 // path to ui5 repository
-const UI5 = process.env.NODE_ENV === 'development' ? 'ui5' : 'ui5'
+const UI5 = IS_DEV_MODE ? 'ui5' : `${DIST}/ui5`
+
+// create unique hash for current favicon image
+const isFaviconDefined =
+  pkg.favicon && pkg.favicon.src.length > 0 && fs.existsSync(pkg.favicon.src)
+const FAVICON_HASH = isFaviconDefined
+  ? require('loader-utils')
+      .getHashDigest(
+        Buffer.concat([fs.readFileSync(pkg.favicon.src)]),
+        'sha512',
+        'base62',
+        8
+      )
+      .toLowerCase()
+  : ''
+
+// helper array function
+const noPrebuild = oModule => oModule.prebuild !== true
+const mapExternalModulePath = oModule => ({
+  ...oModule,
+  path: oModule.path.replace(/^\/?node_modules/, `${SRC}/node_modules`)
+})
 
 // read modules
-const aApps = pkg.ui5.apps || []
-const aThemes = pkg.ui5.themes || []
-const aLibs = pkg.ui5.libraries || []
-const aAssets = pkg.ui5.assets || []
-const aModules = []
-  .concat(aApps)
-  .concat(aThemes)
-  .concat(aLibs)
-  .concat(aAssets)
+const UI5_APPS = (pkg.ui5.apps || []).map(mapExternalModulePath)
+const UI5_LIBS = (pkg.ui5.libraries || []).map(mapExternalModulePath)
+const UI5_THEMES = (pkg.ui5.themes || []).map(mapExternalModulePath)
+const NON_UI5_ASSETS = (pkg.ui5.assets || []).map(mapExternalModulePath)
+const UI5_ROOTS = []
+  .concat(UI5_APPS)
+  .concat(UI5_THEMES)
+  .concat(UI5_LIBS)
+  .concat(NON_UI5_ASSETS)
+
+// target directory of plain npm dependencies
+const NPM_MODULES_TARGET = pkg.ui5.vendor || { name: '', path: '' }
+
+// identify ui5 modules loaded as devDependency
+const NPM_UI5_LIBS = (pkg.ui5.libraries || []).filter(oModule =>
+  oModule.path.startsWith('node_modules')
+)
+const NPM_UI5_MODULES = []
+  .concat(pkg.ui5.apps || [])
+  .concat(pkg.ui5.themes || [])
+  .concat(pkg.ui5.libraries || [])
+  .concat(pkg.ui5.assets || [])
+  .filter(oModule => oModule.path.startsWith('node_modules'))
+
+const TARGET_THEME = pkg.ui5.theme || 'sap_belize'
 
 // paths used in our app
 const paths = {
@@ -99,7 +147,7 @@ const paths = {
     src: [pkg.main]
   },
   assets: {
-    src: aModules
+    src: UI5_ROOTS.filter(noPrebuild)
       .reduce(
         (aSrc, oModule) =>
           aSrc.concat([
@@ -112,21 +160,28 @@ const paths = {
         []
       )
       // take into account .js files only for asset roots
-      .concat(aAssets.map(oAsset => `${oAsset.path}/**/*.js`))
+      // TODO: create path automatically based on pkg.main
+      .concat(NON_UI5_ASSETS.map(oAsset => `${oAsset.path}/**/*.js`))
   },
   scripts: {
-    src: aApps.concat(aLibs).map(oModule => `${oModule.path}/**/*.js`)
+    src: UI5_APPS.filter(noPrebuild)
+      .concat(UI5_LIBS)
+      .map(oModule => `${oModule.path}/**/*.js`)
   },
   appStyles: {
-    src: aApps.concat(aAssets).map(oModule => `${oModule.path}/**/*.less`)
+    src: UI5_APPS.concat(NON_UI5_ASSETS).map(
+      oModule => `${oModule.path}/**/*.less`
+    )
   },
   libStyles: {
-    src: aLibs.map(oLibrary => `${oLibrary.path}/**/*.less`)
+    src: UI5_LIBS.filter(noPrebuild).map(
+      oLibrary => `${oLibrary.path}/**/*.less`
+    )
   },
   themeStyles: {
-    src: aThemes.map(oTheme => `${oTheme.path}/**/*.less`)
+    src: UI5_THEMES.filter(noPrebuild).map(oTheme => `${oTheme.path}/**/*.less`)
   },
-  cacheBuster: {
+  htmlEntries: {
     // this should be the result file of task 'entryDist'
     src: [`${DIST}/index.html`]
   }
@@ -140,8 +195,9 @@ const paths = {
 const start = gulp.series(
   logStart,
   clean,
+  favicon,
   gulp.parallel(gulp.series(downloadOpenUI5, buildOpenUI5), loadDependencies),
-  copyUi5Theme,
+  gulp.parallel(copyUi5Theme, copyUi5LibraryThemes),
   gulp.parallel(
     entry,
     assets,
@@ -150,7 +206,7 @@ const start = gulp.series(
     ui5LibStyles,
     ui5ThemeStyles
   ),
-  logStats,
+  gulp.parallel(logStats),
   watch
 )
 
@@ -170,19 +226,18 @@ function logStatsCommons() {
     !oSource.isArchive && oSource.isPrebuild ? '(remote)' : ''
   const sUI5Details = !oSource.isPrebuild ? '(custom build)' : sOnlineUI5State
 
-  const iApps = (pkg.ui5.apps || []).length
-  const iThemes = (pkg.ui5.themes || []).length
-  const iLibs = (pkg.ui5.libraries || []).length
+  const iApps = UI5_APPS.length
+  const iThemes = UI5_THEMES.length
+  const iLibs = UI5_LIBS.length
 
-  const sVendorLibsPath = pkg.ui5.vendor ? pkg.ui5.vendor.path : ''
+  const sVendorLibsPath = NPM_MODULES_TARGET.path
   const aVendorLibs = mainNpmFiles()
 
   if (aVendorLibs.length > 0) {
-    spinner
-      .print(' ')
-      .succeed(
-        `Dependencies (vendor libraries) loaded into: ${sVendorLibsPath}`
-      )
+    spinner.print(' ')
+    spinner.succeed(
+      `Dependencies (vendor libraries) loaded into: ${sVendorLibsPath}`
+    )
 
     aVendorLibs.forEach(sEntry => {
       const sModuleName = sEntry.split('/node_modules/')[1].split('/')[0]
@@ -220,11 +275,12 @@ export default start
 const build = gulp.series(
   logStartDist,
   cleanDist,
+  favicon,
   gulp.parallel(
     gulp.series(downloadOpenUI5, buildOpenUI5),
     loadDependenciesDist
   ),
-  copyUi5Theme,
+  gulp.parallel(copyUi5Theme, copyUi5LibraryThemes),
   gulp.parallel(
     entryDist,
     assetsDist,
@@ -234,9 +290,18 @@ const build = gulp.series(
     ui5ThemeStylesDist
   ),
   gulp.parallel(ui5preloads, ui5LibPreloads),
-  ui5cacheBust,
+  gulp.parallel(ui5cacheBust),
+  gulp.parallel(preCompressionGzip, preCompressionBrotli),
   logStatsDist
 )
+const buildErrorHandler = {
+  errorHandler: error => {
+    // print error
+    spinner.fail(error)
+    // exit gulp
+    throw error
+  }
+}
 
 // log start build message and start spinner
 function logStartDist(done) {
@@ -276,10 +341,14 @@ function watch() {
   gulp.watch(paths.themeStyles.src, gulp.series(ui5ThemeStyles, reload))
 
   // start HTTP server
+  // learn more about the powerful options (proxy, middleware, etc.) here:
+  // https://www.browsersync.io/docs/options
   server.init({
-    // learn more about the powerful options (proxy, middleware, etc.) here:
-    // https://www.browsersync.io/docs/options
-    port: 3000,
+    // open the browser automatically
+    open: true,
+    // enable browser sync UI
+    ui: false,
+    port: process.env.DEV_PORT,
     server: {
       baseDir: `./${DEV}`,
       routes: {
@@ -298,12 +367,35 @@ export function testDist() {
     '\u{1F64C}  (Server started, use Ctrl+C to stop and go back to the console...)'
 
   // start HTTP server
+  // learn more about the powerful options (proxy, middleware, etc.) here:
+  // https://www.browsersync.io/docs/options
   server.init({
-    port: 3000,
+    // open the browser automatically
+    open: true,
+    // use port defined in package.json
+    port: parseInt(process.env.DEV_PORT || 3000, 10),
+    // TODO: create path automatically based on pkg.main
+    startPath: 'index.html',
     server: {
       baseDir: `./${DIST}`,
+      index: 'index.html',
       routes: {
         '/ui5': `./${UI5}`
+      }
+    },
+    callbacks: {
+      ready: function(err, bs) {
+        // gzip/brotli static middleware - serves compressed files if they exist
+        bs.addMiddleware('*', gzipStaticMiddleware(`./${DIST}`), {
+          override: true
+        })
+
+        // only serve ui5 assets if not fetched from remote
+        if (fs.existsSync(`./${UI5}`)) {
+          bs.addMiddleware('/ui5', gzipStaticMiddleware(`./${UI5}`), {
+            override: true
+          })
+        }
       }
     }
   })
@@ -318,11 +410,8 @@ export function testDist() {
 
 // [development build]
 function reload(done) {
-  if (commander.local) {
-    server.reload()
-  } else {
-    gutil.log('Change completed, ready for reload...')
-  }
+  server.reload()
+  gutil.log('Change completed, ready for reload...')
   spinner.print(`\u{1F435}  update completed.`)
   done()
 }
@@ -384,7 +473,6 @@ export function downloadOpenUI5() {
 // [development & production build]
 export function buildOpenUI5() {
   try {
-    // define build Promise
     const sSourceID = pkg.ui5.src
     const oSource = pkg.ui5.srcLinks[sSourceID]
     const sUI5Version = oSource.version
@@ -408,6 +496,7 @@ export function buildOpenUI5() {
         'Build UI5... (this task can take several minutes, please be patient)'
     }
 
+    // define build Promise
     return isBuildRequired
       ? ui5Build(
           `${sDownloadPath}/${sUI5Version}`,
@@ -435,20 +524,46 @@ export function buildOpenUI5() {
 
 // [development build]
 function clean() {
-  try {
-    return del([`${DEV}/**/*`, `!${UI5}/**/*`])
-  } catch (error) {
-    spinner.fail(error)
-  }
+  return del([`${DEV}/**/*`, `!${UI5}/**/*`, `!${DEV}/${FAVICON_HASH}`])
 }
 
 // [production build]
 function cleanDist() {
-  try {
-    return del([`${DIST}/**/*`, `!${UI5}/**/*`])
-  } catch (error) {
-    spinner.fail(error)
-  }
+  return del([`${DIST}/**/*`, `!${UI5}/**/*`, `!${DIST}/${FAVICON_HASH}`])
+}
+
+/* ----------------------------------------------------------- *
+ * generate favicons (long runner ~ 100-200 sec)
+ * ----------------------------------------------------------- */
+
+// [production & development build]
+function favicon() {
+  const targetPath = IS_DEV_MODE ? DEV : DIST
+  const isFaviconsDirCached = fs.existsSync(
+    `${targetPath}/${FAVICON_HASH}/results.html`
+  )
+  // use content hash of master image as directory name and cashe assets in dev mode
+  return isFaviconsDirCached || !isFaviconDefined
+    ? Promise.resolve()
+    : gulp
+        .src(pkg.favicon.src)
+        .pipe(plumber(buildErrorHandler))
+        .pipe(
+          favicons({
+            appName: pkg.ui5.indexTitle,
+            appDescription: pkg.description,
+            developerName: pkg.author,
+            version: pkg.version,
+            background: '#fefefe',
+            theme_color: '#fefefe',
+            path: `./${FAVICON_HASH}`,
+            html: 'results.html',
+            online: false,
+            preferOnline: false,
+            pipeHTML: true
+          })
+        )
+        .pipe(gulp.dest(`${targetPath}/${FAVICON_HASH}`))
 }
 
 /* ----------------------------------------------------------- *
@@ -458,21 +573,21 @@ function cleanDist() {
 // [helper function]
 function getHandlebarsProps(sEntryHTMLPath) {
   const aResourceRootsSrc = []
-    .concat(pkg.ui5.apps)
-    .concat(pkg.ui5.vendor ? [pkg.ui5.vendor] : [])
-    .concat(pkg.ui5.libraries)
-    .concat(pkg.ui5.assets)
+    .concat(UI5_APPS)
+    .concat(UI5_LIBS)
+    .concat(NON_UI5_ASSETS)
+    .concat([NPM_MODULES_TARGET])
 
   return {
     indexTitle: pkg.ui5.indexTitle,
     src: getRelativeUI5SrcURL(sEntryHTMLPath),
-    theme: pkg.ui5.theme,
+    theme: TARGET_THEME,
     // create resource roots string
     resourceroots: JSON.stringify(
       aResourceRootsSrc.reduce((oResult, oModule) => {
         const sModulePath = oModule.path.replace(
           new RegExp(`^${SRC}`),
-          process.env.NODE_ENV === 'development' ? DEV : DIST
+          IS_DEV_MODE ? DEV : DIST
         )
         // create path to theme relative to entry HTML
         return Object.assign(oResult, {
@@ -485,10 +600,10 @@ function getHandlebarsProps(sEntryHTMLPath) {
     ),
     // create custom theme roots string
     themeroots: JSON.stringify(
-      pkg.ui5.themes.reduce((oResult, oTheme) => {
+      UI5_THEMES.reduce((oResult, oTheme) => {
         const sThemePath = oTheme.path.replace(
           new RegExp(`^${SRC}`),
-          process.env.NODE_ENV === 'development' ? DEV : DIST
+          IS_DEV_MODE ? DEV : DIST
         )
         // create path to theme relative to entry HTML
         return Object.assign(oResult, {
@@ -498,7 +613,14 @@ function getHandlebarsProps(sEntryHTMLPath) {
           )
         })
       }, {})
-    )
+    ),
+    // create favicons
+    favicons: isFaviconDefined
+      ? fs.readFileSync(
+          `${IS_DEV_MODE ? DEV : DIST}/${FAVICON_HASH}/results.html`,
+          'utf8'
+        )
+      : ''
   }
 }
 
@@ -556,7 +678,10 @@ function entry() {
             .src(
               [sEntry],
               // filter out unchanged files between runs
-              { base: SRC, since: gulp.lastRun(entry) }
+              {
+                base: SRC,
+                since: gulp.lastRun(entry)
+              }
             )
             // don't exit the running watcher task on errors
             .pipe(plumber())
@@ -571,7 +696,11 @@ function entry() {
                 )
               )
             )
-            .pipe(rename({ extname: '.html' }))
+            .pipe(
+              rename({
+                extname: '.html'
+              })
+            )
             .on('error', reject)
             .pipe(gulp.dest(DEV))
             .on('end', resolve)
@@ -597,10 +726,12 @@ function entryDist() {
             .src(
               [sEntry],
               // filter out unchanged files between runs
-              { base: SRC, since: gulp.lastRun(entry) }
+              {
+                base: SRC,
+                since: gulp.lastRun(entry)
+              }
             )
-            // don't exit the running watcher task on errors
-            .pipe(plumber())
+            .pipe(plumber(buildErrorHandler))
             // compile handlebars to HTML
             .pipe(
               hdlbars(
@@ -614,7 +745,11 @@ function entryDist() {
             )
             // minify HTML (disabled, cause data-sap-ui-theme-roots gets removed)
             // .pipe(htmlmin())
-            .pipe(rename({ extname: '.html' }))
+            .pipe(
+              rename({
+                extname: '.html'
+              })
+            )
             .on('error', reject)
             .pipe(gulp.dest(DIST))
             .on('end', resolve)
@@ -640,7 +775,10 @@ function assets() {
           .src(
             paths.assets.src,
             // filter out unchanged files between runs
-            { base: SRC, since: gulp.lastRun(assets) }
+            {
+              base: SRC,
+              since: gulp.lastRun(assets)
+            }
           )
           // don't exit the running watcher task on errors
           .pipe(plumber())
@@ -662,7 +800,10 @@ function assetsDist() {
     return paths.assets.src.length === 0
       ? Promise.resolve()
       : gulp
-          .src(paths.assets.src, { base: SRC })
+          .src(paths.assets.src, {
+            base: SRC
+          })
+          .pipe(plumber(buildErrorHandler))
           // optimize size and quality of images
           .pipe(
             gulpif(
@@ -682,6 +823,15 @@ function assetsDist() {
                 extensions: {
                   svg: 'xml'
                 }
+              })
+            )
+          )
+          // rename i18n_*.dist.properties into i18n_*.properties
+          .pipe(
+            gulpif(
+              /.*\.dist.properties$/,
+              rename(path => {
+                path.basename = path.basename.replace(/\.dist$/g, '')
               })
             )
           )
@@ -721,7 +871,10 @@ function scripts() {
           .src(
             paths.scripts.src,
             // filter out unchanged files between runs
-            { base: SRC, since: gulp.lastRun(scripts) }
+            {
+              base: SRC,
+              since: gulp.lastRun(scripts)
+            }
           )
           // don't exit the running watcher task on errors
           .pipe(plumber())
@@ -741,11 +894,18 @@ function scriptsDist() {
     return paths.scripts.src.length === 0
       ? Promise.resolve()
       : gulp
-          .src(paths.scripts.src, { base: SRC })
+          .src(paths.scripts.src, {
+            base: SRC
+          })
+          .pipe(plumber(buildErrorHandler))
           // babel will run with the settings defined in `.babelrc` file
           .pipe(babel())
           // save non-minified copies with debug duffix
-          .pipe(rename({ suffix: '-dbg' }))
+          .pipe(
+            rename({
+              suffix: '-dbg'
+            })
+          )
           .pipe(gulp.dest(DIST))
           // process copies without suffix
           .pipe(
@@ -754,7 +914,6 @@ function scriptsDist() {
               return oFile
             })
           )
-
           // minify scripts
           .pipe(uglify())
           .pipe(gulp.dest(DIST))
@@ -770,14 +929,19 @@ function scriptsDist() {
 // [development build]
 function ui5AppStyles() {
   try {
-    const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
+    const autoprefix = new LessAutoprefix({
+      browsers: ['last 2 versions']
+    })
     return paths.appStyles.src.length === 0
       ? Promise.resolve()
       : gulp
           .src(
             paths.appStyles.src,
             // filter out unchanged files between runs
-            { base: SRC, since: gulp.lastRun(ui5AppStyles) }
+            {
+              base: SRC,
+              since: gulp.lastRun(ui5AppStyles)
+            }
           )
           // don't exit the running watcher task on errors
           .pipe(plumber())
@@ -798,11 +962,16 @@ function ui5AppStyles() {
 // [production build]
 function ui5AppStylesDist() {
   try {
-    const autoprefix = new LessAutoprefix({ browsers: ['last 2 versions'] })
+    const autoprefix = new LessAutoprefix({
+      browsers: ['last 2 versions']
+    })
     return paths.appStyles.src.length === 0
       ? Promise.resolve()
       : gulp
-          .src(paths.appStyles.src, { base: SRC })
+          .src(paths.appStyles.src, {
+            base: SRC
+          })
+          .pipe(plumber(buildErrorHandler))
           // compile LESS to CSS
           .pipe(
             less({
@@ -831,7 +1000,7 @@ function ui5preloads() {
     // update spinner state
     spinner.text = 'Bundling modules...'
 
-    const aPreloadPromise = pkg.ui5.apps.map(oApp => {
+    const aPreloadPromise = UI5_APPS.filter(noPrebuild).map(oApp => {
       const sDistAppPath = oApp.path.replace(new RegExp(`^${SRC}`), DIST)
       return new Promise(function(resolve, reject) {
         gulp
@@ -844,6 +1013,7 @@ function ui5preloads() {
             // don't bundle debug resources
             `!${sDistAppPath}/**/*-dbg.js`
           ])
+          .pipe(plumber(buildErrorHandler))
           .pipe(
             ui5preload({
               base: sDistAppPath,
@@ -869,8 +1039,7 @@ function ui5preloads() {
 // [production build]
 function ui5LibPreloads() {
   try {
-    const aLibraries = pkg.ui5.libraries || []
-    const aPreloadPromise = aLibraries.map(oLibrary => {
+    const aPreloadPromise = UI5_LIBS.filter(noPrebuild).map(oLibrary => {
       const sDistLibraryPath = oLibrary.path.replace(
         new RegExp(`^${SRC}`),
         DIST
@@ -885,6 +1054,7 @@ function ui5LibPreloads() {
             `!${sDistLibraryPath}/**/*-dbg.js`,
             `!${sDistLibraryPath}/**/*-preload.js`
           ])
+          .pipe(plumber(buildErrorHandler))
           .pipe(
             ui5preload({
               base: sDistLibraryPath,
@@ -906,7 +1076,14 @@ function ui5LibPreloads() {
               })
             )
           )
-          .pipe(gulpif('**/library-preload.json', rename({ extname: '.js' })))
+          .pipe(
+            gulpif(
+              '**/library-preload.json',
+              rename({
+                extname: '.js'
+              })
+            )
+          )
           .on('error', reject)
           .pipe(gulp.dest(sDistLibraryPath))
           .on('end', resolve)
@@ -925,9 +1102,8 @@ function ui5LibPreloads() {
 // [development build]
 function ui5LibStyles() {
   try {
-    const aLibraries = pkg.ui5.libraries || []
     const mapPathToDev = sPath => sPath.replace(new RegExp(`^${SRC}`), DEV)
-    const aSelectLibrarySources = aLibraries.map(
+    const aSelectLibrarySources = UI5_LIBS.filter(noPrebuild).map(
       oLibrary => `${mapPathToDev(oLibrary.path)}/**/library.source.less`
     )
 
@@ -977,12 +1153,11 @@ function ui5LibStyles() {
 // [production build]
 function ui5LibStylesDist() {
   try {
-    const aLibraries = pkg.ui5.libraries || []
     const mapPathToDist = sPath => sPath.replace(new RegExp(`^${SRC}`), DIST)
-    const aSelectLibrarySources = aLibraries.map(
+    const aSelectLibrarySources = UI5_LIBS.filter(noPrebuild).map(
       oLibrary => `${mapPathToDist(oLibrary.path)}/**/library.source.less`
     )
-    const aSelectLibraryBundles = aLibraries.reduce(
+    const aSelectLibraryBundles = UI5_LIBS.filter(noPrebuild).reduce(
       (aBundles, oLibrary) =>
         aBundles.concat([
           `${mapPathToDist(oLibrary.path)}/**/library.css`,
@@ -999,6 +1174,7 @@ function ui5LibStylesDist() {
             .src(paths.libStyles.src, {
               base: SRC
             })
+            .pipe(plumber(buildErrorHandler))
             .pipe(gulp.dest(DIST))
             .on('error', reject)
             .on('end', resolve)
@@ -1012,6 +1188,7 @@ function ui5LibStylesDist() {
                     read: true,
                     base: DIST
                   })
+                  .pipe(plumber(buildErrorHandler))
                   .pipe(
                     tap(oFile => {
                       ui5CompileLessLib(oFile)
@@ -1030,6 +1207,7 @@ function ui5LibStylesDist() {
                   .src(aSelectLibraryBundles, {
                     base: DIST
                   })
+                  .pipe(plumber(buildErrorHandler))
                   // minify CSS
                   .pipe(
                     cleanCSS({
@@ -1053,7 +1231,6 @@ function ui5LibStylesDist() {
 // [development & production build]
 function copyUi5Theme() {
   try {
-    const aThemes = pkg.ui5.themes || []
     const sSourceID = pkg.ui5.src
     const oSource = pkg.ui5.srcLinks[sSourceID]
     const sUI5Version = oSource.version
@@ -1070,7 +1247,7 @@ function copyUi5Theme() {
       ? sOpenUI5PathWrapped.replace(/\/sap-ui-core\.js$/, '')
       : sOpenUI5PathNaked.replace(/\/sap-ui-core\.js$/, '')
 
-    if (aThemes.length === 0) {
+    if (UI5_THEMES.length === 0) {
       return Promise.resolve()
     }
 
@@ -1079,7 +1256,7 @@ function copyUi5Theme() {
     }
 
     // copy UI5 theme resources to path/to/my/theme/UI5 [one-time after building ui5]
-    const aThemeUpdates = aThemes.map(
+    const aThemeUpdates = UI5_THEMES.filter(noPrebuild).map(
       oTheme =>
         new Promise((resolve, reject) =>
           gulp
@@ -1095,6 +1272,7 @@ function copyUi5Theme() {
                 base: `${sUI5Path}`
               }
             )
+            .pipe(plumber(buildErrorHandler))
             .pipe(gulp.dest(`${oTheme.path}/UI5`))
             .on('error', reject)
             .on('end', resolve)
@@ -1107,17 +1285,62 @@ function copyUi5Theme() {
   }
 }
 
+// [development & production build]
+export function copyUi5LibraryThemes() {
+  try {
+    // copy UI5 theme resources to path/to/my/theme/UI5 [one-time after building ui5]
+    const aThemeUpdates = UI5_THEMES.filter(noPrebuild).reduce(
+      (aUpdateList, oTheme) => {
+        var sThemeTargetPath = oTheme.path.replace(
+          new RegExp(`^${SRC}`),
+          IS_DEV_MODE ? DEV : DIST
+        )
+
+        var aNpmUi5Lib = NPM_UI5_LIBS.map(oLib => {
+          const sNpmUi5BasePath = oLib.path.replace(
+            new RegExp(`${oLib.name.replace('.', '/')}$`),
+            ''
+          )
+          return new Promise((resolve, reject) =>
+            gulp
+              .src(
+                [
+                  `${oLib.path}/**/*.css`,
+                  `${oLib.path}/**/themes/**/*`,
+                  `!${oLib.path}/**/themes/**/library.css`,
+                  `!${oLib.path}/**/themes/**/library-*.css`,
+                  `!${oLib.path}/**/themes/**/*.json`
+                ],
+                {
+                  base: sNpmUi5BasePath
+                }
+              )
+              .pipe(plumber(buildErrorHandler))
+              .pipe(gulp.dest(`${sThemeTargetPath}/UI5`))
+              .on('error', reject)
+              .on('end', resolve)
+          )
+        })
+        return aUpdateList.concat(aNpmUi5Lib)
+      },
+      []
+    )
+
+    return Promise.all(aThemeUpdates)
+  } catch (error) {
+    spinner.fail(error)
+  }
+}
+
 // [development build]
 function ui5ThemeStyles() {
   try {
-    const sTargetTheme = pkg.ui5.theme
-    const aThemes = pkg.ui5.themes || []
     const mapPathToDev = sPath => sPath.replace(new RegExp(`^${SRC}`), DEV)
-    const aSelectLibrarySources = aThemes.map(
+    const aSelectLibrarySources = UI5_THEMES.filter(noPrebuild).map(
       oTheme =>
         `${mapPathToDev(
           oTheme.path
-        )}/**/themes/${sTargetTheme}/library.source.less`
+        )}/**/themes/${TARGET_THEME}/library.source.less`
     )
 
     return paths.themeStyles.src.length === 0
@@ -1166,22 +1389,20 @@ function ui5ThemeStyles() {
 // [production build]
 function ui5ThemeStylesDist() {
   try {
-    const sTargetTheme = pkg.ui5.theme
-    const aThemes = pkg.ui5.themes || []
     const mapPathToDist = sPath => sPath.replace(new RegExp(`^${SRC}`), DIST)
-    const aSelectLibrarySources = aThemes.map(
+    const aSelectLibrarySources = UI5_THEMES.filter(noPrebuild).map(
       oTheme =>
         `${mapPathToDist(
           oTheme.path
-        )}/**/themes/${sTargetTheme}/library.source.less`
+        )}/**/themes/${TARGET_THEME}/library.source.less`
     )
-    const aSelectLibraryBundles = aThemes.reduce(
+    const aSelectLibraryBundles = UI5_THEMES.filter(noPrebuild).reduce(
       (aBundles, oTheme) =>
         aBundles.concat([
-          `${mapPathToDist(oTheme.path)}/**/themes/${sTargetTheme}/library.css`,
+          `${mapPathToDist(oTheme.path)}/**/themes/${TARGET_THEME}/library.css`,
           `${mapPathToDist(
             oTheme.path
-          )}/**/themes/${sTargetTheme}/library-RTL.css`
+          )}/**/themes/${TARGET_THEME}/library-RTL.css`
         ]),
       []
     )
@@ -1194,6 +1415,7 @@ function ui5ThemeStylesDist() {
             .src(paths.themeStyles.src, {
               base: SRC
             })
+            .pipe(plumber(buildErrorHandler))
             .pipe(gulp.dest(DIST))
             .on('error', reject)
             .on('end', resolve)
@@ -1207,6 +1429,7 @@ function ui5ThemeStylesDist() {
                     read: true,
                     base: DIST
                   })
+                  .pipe(plumber(buildErrorHandler))
                   .pipe(
                     tap(oFile => {
                       ui5CompileLessLib(oFile)
@@ -1227,6 +1450,7 @@ function ui5ThemeStylesDist() {
                     // select only files that have changed since the last run
                     since: gulp.lastRun(ui5LibStylesDist)
                   })
+                  .pipe(plumber(buildErrorHandler))
                   // minify CSS
                   .pipe(
                     cleanCSS({
@@ -1263,13 +1487,9 @@ function getExposedModuleName(sModule) {
 }
 
 // [development build]
-function loadDependencies() {
+export function loadDependencies() {
   try {
-    if (
-      !pkg.ui5.vendor ||
-      !pkg.ui5.vendor.path ||
-      pkg.ui5.vendor.path.length === 0
-    ) {
+    if (!NPM_MODULES_TARGET.path || NPM_MODULES_TARGET.path.length === 0) {
       return Promise.resolve()
     }
 
@@ -1315,14 +1535,15 @@ function loadDependencies() {
           )
         })
     )
-
     const aStyleCopy = aDependencies.map(
       sEntry =>
         new Promise((resolve, reject) => {
           const sStylesheetName = sEntry.replace(/\.js$/, '.css')
           return fs.existsSync(path.resolve(__dirname, sStylesheetName))
             ? gulp
-                .src([sStylesheetName])
+                .src([sStylesheetName], {
+                  base: '/'
+                })
                 .pipe(gulp.dest(sVendorLibsPathSrc))
                 .pipe(gulp.dest(sVendorLibsPathDev))
                 .on('end', resolve)
@@ -1331,7 +1552,25 @@ function loadDependencies() {
         })
     )
 
-    return Promise.all([].concat(aEntryBuilds).concat(aStyleCopy))
+    const oExternalModuleCopy = new Promise((resolve, reject) => {
+      return NPM_UI5_MODULES.length > 0
+        ? gulp
+            .src(NPM_UI5_MODULES.map(oModule => `${oModule.path}/**/*`), {
+              base: './'
+            })
+            .pipe(gulp.dest(DEV))
+            .on('end', resolve)
+            .on('error', reject)
+        : resolve()
+    })
+
+    // execute all at once
+    return Promise.all(
+      []
+        .concat(aEntryBuilds)
+        .concat(aStyleCopy)
+        .concat(oExternalModuleCopy)
+    )
   } catch (error) {
     spinner.fail(error)
   }
@@ -1340,16 +1579,12 @@ function loadDependencies() {
 // [production build]
 function loadDependenciesDist() {
   try {
-    if (
-      !pkg.ui5.vendor ||
-      !pkg.ui5.vendor.path ||
-      pkg.ui5.vendor.path.length === 0
-    ) {
+    if (!NPM_MODULES_TARGET.path || NPM_MODULES_TARGET.path.length === 0) {
       return Promise.resolve()
     }
 
     const aDependencies = mainNpmFiles()
-    const sVendorLibsPath = (pkg.ui5.vendor ? pkg.ui5.vendor.path : '').replace(
+    const sVendorLibsPath = NPM_MODULES_TARGET.path.replace(
       new RegExp(`^${SRC}`),
       DIST
     )
@@ -1368,6 +1603,7 @@ function loadDependenciesDist() {
               // babel will run with the settings defined in `.babelrc` file
               .transform(babelify)
               .bundle()
+              .pipe(plumber(buildErrorHandler))
               .pipe(source(`${sModuleName}.js`))
               .pipe(buffer())
               // wrap complete module to be compatible with ui5 loading system
@@ -1411,7 +1647,25 @@ function loadDependenciesDist() {
         })
     )
 
-    return Promise.all([].concat(aEntryBuilds).concat(aStyleCopy))
+    const oExternalModuleCopy = new Promise((resolve, reject) => {
+      return NPM_UI5_MODULES.length > 0
+        ? gulp
+            .src(NPM_UI5_MODULES.map(oModule => `${oModule.path}/**/*`), {
+              base: './'
+            })
+            .pipe(gulp.dest(DEV))
+            .on('end', resolve)
+            .on('error', reject)
+        : resolve()
+    })
+
+    // execute all at once
+    return Promise.all(
+      []
+        .concat(aEntryBuilds)
+        .concat(aStyleCopy)
+        .concat(oExternalModuleCopy)
+    )
   } catch (error) {
     spinner.fail(error)
   }
@@ -1431,14 +1685,62 @@ function ui5cacheBust() {
       return Promise.resolve('Cache buster is deactivated.')
     }
 
-    return paths.cacheBuster.src.length === 0
+    return paths.htmlEntries.src.length === 0
       ? Promise.resolve()
       : gulp
-          .src(paths.cacheBuster.src)
+          .src(paths.htmlEntries.src)
+          .pipe(plumber(buildErrorHandler))
           // rename UI5 module (app component) paths and update index.html
           .pipe(tap(oFile => ui5Bust(oFile)))
           .pipe(gulp.dest(DIST))
   } catch (error) {
     spinner.fail(error)
   }
+}
+
+/* ----------------------------------------------------------- *
+ * precompress files with gzip and brotli
+ * ----------------------------------------------------------- */
+
+// [production build]
+function preCompressionGzip() {
+  // update spinner state
+  spinner.text = 'Run pre compression...'
+
+  return (
+    gulp
+      .src([
+        `${DIST}/**/*.{js,css,html,svg,xml,json,txt,properties}`,
+        `${UI5}/**/*.{js,css,html,svg,xml,json,txt,properties}`
+      ])
+      // create .gz (gzip) files
+      .pipe(
+        gzip({
+          skipGrowingFiles: true
+        })
+      )
+      .pipe(gulp.dest(DIST))
+  )
+}
+
+// [production build]
+function preCompressionBrotli() {
+  // update spinner state
+  spinner.text = 'Run pre compression...'
+
+  return (
+    gulp
+      .src([
+        `${DIST}/**/*.{js,css,html,svg,xml,json,txt,properties}`,
+        `${UI5}/**/*.{js,css,html,svg,xml,json,txt,properties}`
+      ])
+      // create .br (brotli) files
+      .pipe(
+        brotli.compress({
+          extension: 'br',
+          skipLarger: true
+        })
+      )
+      .pipe(gulp.dest(DIST))
+  )
 }
