@@ -107,6 +107,20 @@ const FAVICON_HASH = isFaviconDefined
       .toLowerCase()
   : ''
 
+// read build settings
+const BUILD = {
+  cacheBuster: pkg.ui5.build && pkg.ui5.build.cacheBuster === true,
+  compression: pkg.ui5.build && pkg.ui5.build.compression !== false,
+  compressionGzip:
+    pkg.ui5.build &&
+    (pkg.ui5.build.compression === true ||
+      [].concat(pkg.ui5.build.compression).includes('gzip')),
+  compressionBrotli:
+    pkg.ui5.build &&
+    (pkg.ui5.build.compression === true ||
+      [].concat(pkg.ui5.build.compression).includes('brotli'))
+}
+
 // helper array function
 const noPrebuild = oModule => oModule.prebuild !== true
 const mapExternalModulePath = oModule => ({
@@ -1683,7 +1697,7 @@ function ui5cacheBust() {
     // update spinner state
     spinner.text = 'Run cache buster...'
 
-    if (pkg.ui5.cacheBuster === false) {
+    if (BUILD.cacheBuster === false) {
       return Promise.resolve('Cache buster is deactivated.')
     }
 
@@ -1709,6 +1723,10 @@ function preCompressionGzip() {
   // update spinner state
   spinner.text = 'Run pre compression...'
 
+  if (!BUILD.compression || !BUILD.compressionGzip) {
+    return Promise.resolve()
+  }
+
   return (
     gulp
       .src([
@@ -1729,6 +1747,10 @@ function preCompressionGzip() {
 function preCompressionBrotli() {
   // update spinner state
   spinner.text = 'Run pre compression...'
+
+  if (!BUILD.compression || !BUILD.compressionBrotli) {
+    return Promise.resolve()
+  }
 
   return (
     gulp

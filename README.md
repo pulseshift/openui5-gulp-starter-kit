@@ -82,22 +82,28 @@ Info: To get a more detailed logging, just use `yarn build:verbose` instead.
 _Attention: comments are only for explanation, tehy can't be used in package.json._
 
 ```javascript
-// define a master favicon and generate all x-browser fav-icons at once
-"favicon": {
-    "src": "src/assets/favicon/master.png"
-},
-"ui5": {
-  // turn cache buster on to invalidate the users browser cache automatically for changed files
-  "cacheBuster": true,
-
+{
   // path to an handlebars file used to create the index.html file of this project
   "main": "src/index.hbs",
 
+  // define a master favicon and generate all x-browser fav-icons at once
+  "favicon": {
+      "src": "src/assets/favicon/master.png"
+  },
+
   // custom section with settings required for the build process
   "ui5": {
-
     // tite name of the index.html
     "indexTitle": "UI5 Todo App",
+
+    // build settings
+    "build": {
+        // turn cache buster on to invalidate the users browser cache automatically for changed files
+        "cacheBuster": true,
+
+        // turn on compression to minify file size and bandwith of HTTP server (options: boolean or list of compression algorithms)
+        "compression": ["gzip", "brotli"]
+    },
 
     // key of the selected UI5 library source (must be available in section ui5.srcLinks)
     "src": "cdn",
