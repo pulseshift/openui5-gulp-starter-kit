@@ -318,7 +318,12 @@ export function testDist() {
 
 // [development build]
 function reload(done) {
-  server.reload()
+  if (commander.local) {
+    server.reload()
+  } else {
+    gutil.log('Change completed, ready for reload...')
+  }
+  spinner.print(`\u{1F435}  update completed.`)
   done()
 }
 
@@ -1279,17 +1284,30 @@ function loadDependencies() {
       sEntry =>
         new Promise((resolve, reject) => {
           const sModuleName = sEntry.split('/node_modules/')[1].split('/')[0]
-          const sGlobalname = getExposedModuleName(sModuleName)
+          const sGlobalName = getExposedModuleName(sModuleName)
           return (
             browserify({
               entries: sEntry,
-              standalone: sGlobalname
+              // global name will never be exposed, cause we wrap the module in an ui5 define statement
+              standalone: sGlobalName
             })
               // babel will run with the settings defined in `.babelrc` file
               .transform(babelify)
               .bundle()
               .pipe(source(`${sModuleName}.js`))
               .pipe(buffer())
+              // wrap complete module to be compatible with ui5 loading system
+              .pipe(
+                tap(file => {
+                  file.contents = Buffer.concat([
+                    new Buffer(`sap.ui.define([/* no dependencies */], function(){
+                      var exports = {};
+                      var module = { exports: null };`),
+                    file.contents,
+                    new Buffer(`return module.exports; });`)
+                  ])
+                })
+              )
               .pipe(gulp.dest(sVendorLibsPathSrc))
               .pipe(gulp.dest(sVendorLibsPathDev))
               .on('end', resolve)
@@ -1340,17 +1358,30 @@ function loadDependenciesDist() {
       sEntry =>
         new Promise((resolve, reject) => {
           const sModuleName = sEntry.split('/node_modules/')[1].split('/')[0]
-          const sGlobalname = getExposedModuleName(sModuleName)
+          const sGlobalName = getExposedModuleName(sModuleName)
           return (
             browserify({
               entries: sEntry,
-              standalone: sGlobalname
+              // global name will never be exposed, cause we wrap the module in an ui5 define statement
+              standalone: sGlobalName
             })
               // babel will run with the settings defined in `.babelrc` file
               .transform(babelify)
               .bundle()
               .pipe(source(`${sModuleName}.js`))
               .pipe(buffer())
+              // wrap complete module to be compatible with ui5 loading system
+              .pipe(
+                tap(file => {
+                  file.contents = Buffer.concat([
+                    new Buffer(`sap.ui.define([/* no dependencies */], function(){
+                      var exports = {};
+                      var module = { exports: null };`),
+                    file.contents,
+                    new Buffer(`return module.exports; });`)
+                  ])
+                })
+              )
               // minify scripts
               .pipe(uglify())
               .pipe(gulp.dest(sVendorLibsPath))

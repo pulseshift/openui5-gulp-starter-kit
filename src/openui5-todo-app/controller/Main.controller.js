@@ -2,19 +2,19 @@ sap.ui.define(
   [
     'app/todo/controller/BaseController',
 
-    // load vendor libraries
+    // load vendor libraries (NEW: passed through as module and not loaded globally)
     'app/libs/moment'
   ],
-  function(BaseController) {
+  function(BaseController, moment) {
     return BaseController.extend('app.todo.controller.Main', {
       /* ----------------------------------------------------------- *
      * lifecycle methods
      * ----------------------------------------------------------- */
 
       /**
-     * Called when the controller is instantiated.
-     * @public
-     */
+       * Called when the controller is instantiated.
+       * @public
+       */
       onInit() {
         // init view state (accassible via {view>/Main/...})
         this.initViewState({
@@ -38,17 +38,17 @@ sap.ui.define(
      * ----------------------------------------------------------- */
 
       /**
-     * Called when registeres route was matched.
-     */
+       * Called when registeres route was matched.
+       */
       onRouteMatched() {
         // update items left
         this._updateItemsLeft()
       },
 
       /**
-     * Add item to todo list.
-     * @param {sap.ui.base.Event} [oEvent] An Event object consisting of an id, a source and a map of parameters.
-     */
+       * Add item to todo list.
+       * @param {sap.ui.base.Event} [oEvent] An Event object consisting of an id, a source and a map of parameters.
+       */
       onAddNewItem(oEvent) {
         const sNewTodoItemName = oEvent.getParameter('value')
         const oViewModel = this.getViewModel()
@@ -69,9 +69,9 @@ sap.ui.define(
       },
 
       /**
-     * Remove item from todo list.
-     * @param {sap.ui.base.Event} [oEvent] An Event object consisting of an id, a source and a map of parameters.
-     */
+       * Remove item from todo list.
+       * @param {sap.ui.base.Event} [oEvent] An Event object consisting of an id, a source and a map of parameters.
+       */
       onDeleteTodo(oEvent) {
         const oListItem = oEvent.getParameter('listItem')
         const sBindingPath = oListItem.getBindingContext('todo').getPath()
@@ -92,8 +92,8 @@ sap.ui.define(
       },
 
       /**
-     * Delete all completed todo items.
-     */
+       * Delete all completed todo items.
+       */
       onClearCompletedTodos() {
         const oTodoModel = this.getView().getModel('todo')
         const aTodoItems = oTodoModel.getProperty('/items')
@@ -108,9 +108,9 @@ sap.ui.define(
       },
 
       /**
-     * Toggle completion stat of todo list.
-     * @param {sap.ui.base.Event} [oEvent] An Event object consisting of an id, a source and a map of parameters.
-     */
+       * Toggle completion stat of todo list.
+       * @param {sap.ui.base.Event} [oEvent] An Event object consisting of an id, a source and a map of parameters.
+       */
       onTogglTodoListCompletion(oEvent) {
         const oCheckBox = oEvent.getSource()
         const isCompleted = oEvent.getParameter('selected')
@@ -135,9 +135,9 @@ sap.ui.define(
       },
 
       /**
-     * Complete all todo items.
-     * @param {sap.ui.base.Event} [oEvent] An Event object consisting of an id, a source and a map of parameters.
-     */
+       * Complete all todo items.
+       * @param {sap.ui.base.Event} [oEvent] An Event object consisting of an id, a source and a map of parameters.
+       */
       onPressCompleteAllTodos(oEvent) {
         const oToggleButton = oEvent.getSource()
         const isCompleteAll = oToggleButton.getPressed()
@@ -162,9 +162,9 @@ sap.ui.define(
      * ----------------------------------------------------------- */
 
       /**
-      * Update number of not completed items.
-      * @private
-      */
+       * Update number of not completed items.
+       * @private
+       */
       _updateItemsLeft() {
         const oViewModel = this.getViewModel()
         const oTodoModel = this.getView().getModel('todo')
