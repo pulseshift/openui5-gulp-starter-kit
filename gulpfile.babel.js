@@ -361,7 +361,7 @@ function watch() {
     // open the browser automatically
     open: true,
     // use port defined in package.json
-    port: process.env.DEV_PORT,
+    port: parseInt(process.env.DEV_PORT || 3000, 10),
     // TODO: create path automatically based on pkg.main
     startPath: 'index.html',
     server: {
