@@ -346,11 +346,13 @@ function watch() {
   server.init({
     // open the browser automatically
     open: true,
-    // enable browser sync UI
-    ui: false,
+    // use port defined in package.json
     port: process.env.DEV_PORT,
+    // TODO: create path automatically based on pkg.main
+    startPath: 'index.html',
     server: {
       baseDir: `./${DEV}`,
+      index: 'index.html',
       routes: {
         '/ui5': `./${UI5}`
       }
