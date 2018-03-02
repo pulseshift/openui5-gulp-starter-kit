@@ -1784,3 +1784,117 @@ function ui5cacheBust() {
     spinner.fail(error)
   }
 }
+
+/* ----------------------------------------------------------- *
+ * precompress files with gzip and brotli
+ * ----------------------------------------------------------- */
+
+// [production build]
+function preCompressionGzip() {
+  // update spinner state
+  spinner.text = 'Run pre compression...'
+
+  if (!BUILD.compression || !BUILD.compressionGzip) {
+    return Promise.resolve()
+  }
+
+  return (
+    gulp
+      .src([
+        `${DIST}/**/*.{js,css,html,svg,xml,json,txt,properties}`,
+        `${UI5}/**/*.{js,css,html,svg,xml,json,txt,properties}`
+      ])
+      // create .gz (gzip) files
+      .pipe(
+        gzip({
+          skipGrowingFiles: true
+        })
+      )
+      .pipe(gulp.dest(DIST))
+  )
+}
+
+// [production build]
+function preCompressionBrotli() {
+  // update spinner state
+  spinner.text = 'Run pre compression...'
+
+  if (!BUILD.compression || !BUILD.compressionBrotli) {
+    return Promise.resolve()
+  }
+
+  return (
+    gulp
+      .src([
+        `${DIST}/**/*.{js,css,html,svg,xml,json,txt,properties}`,
+        `${UI5}/**/*.{js,css,html,svg,xml,json,txt,properties}`
+      ])
+      // create .br (brotli) files
+      .pipe(
+        brotli.compress({
+          extension: 'br',
+          skipLarger: true
+        })
+      )
+      .pipe(gulp.dest(DIST))
+  )
+}
+
+/* ----------------------------------------------------------- *
+ * SAP NetWeaver ABAP System UI5 app upload
+ * ----------------------------------------------------------- */
+
+// [production build]
+function ui5Upload() {
+  try {
+    // update spinner state
+    spinner.text = 'Uploading to SAP NetWeaver ABAP System...'
+
+    // check if cache buster is deactivated
+    if (pkg.ui5.cacheBuster === true) {
+      return Promise.reject(
+        `Cache buster is not supported in combination with nwabap upload, yet.`
+      )
+    }
+
+    // check if nwabap config is maintained
+    if (!pkg.ui5.nwabapUpload) {
+      return Promise.reject(
+        `Option 'ui5.nwabapUpload' config was not found in package.json`
+      )
+    }
+
+    const mapPathToDist = sPath => sPath.replace(new RegExp(`^${SRC}`), DIST)
+    const aDeployPromise = pkg.ui5.apps.map(oApp => {
+      // check if nwabap config is maintained
+      if (!oApp.nwabapDestination) {
+        return Promise.reject(
+          `Option 'nwabapDestination' config was not found for app ${
+            oApp.name
+          } in package.json`
+        )
+      }
+      const sAppDistPath = mapPathToDist(oApp.path)
+
+      return new Promise((resolve, reject) => {
+        gulp
+          .src([`${sAppDistPath}/**`])
+          .pipe(
+            ui5uploader({
+              root: sAppDistPath,
+              // pass conn and auth config
+              ...pkg.ui5.nwabapUpload,
+              // pass nwabap bsp destination
+              ui5: oApp.nwabapDestination
+            })
+          )
+          .pipe(gulp.dest(sAppDistPath))
+          .on('error', reject)
+          .on('end', resolve)
+      })
+    })
+    return Promise.all(aDeployPromise)
+  } catch (error) {
+    spinner.fail(error)
+  }
+}
