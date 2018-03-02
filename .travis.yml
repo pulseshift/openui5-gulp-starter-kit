@@ -28,4 +28,5 @@ before_script:
 
 # no test task exist, yet, theirfore we test some other tasks (e.g. build)
 script:
+  - yarn test
   - yarn build:verbose

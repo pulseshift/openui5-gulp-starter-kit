@@ -613,12 +613,22 @@ export function buildOpenUI5() {
 
 // [development build]
 function clean() {
-  return del([`${DEV}/**/*`, `!${UI5}/**/*`, `!${DEV}/${FAVICON_HASH}`])
+  const VENDOR_SRC = pkg.ui5.vendor ? `${pkg.ui5.vendor.path}/**/*` : ''
+  return del(
+    [`${DEV}/**/*`, `!${UI5}/**/*`, `!${DEV}/${FAVICON_HASH}`].concat(
+      VENDOR_SRC
+    )
+  )
 }
 
 // [production build]
 function cleanDist() {
-  return del([`${DIST}/**/*`, `!${UI5}/**/*`, `!${DIST}/${FAVICON_HASH}`])
+  const VENDOR_SRC = pkg.ui5.vendor ? `${pkg.ui5.vendor.path}/**/*` : ''
+  return del(
+    [`${DIST}/**/*`, `!${UI5}/**/*`, `!${DIST}/${FAVICON_HASH}`].concat(
+      VENDOR_SRC
+    )
+  )
 }
 
 /* ----------------------------------------------------------- *
@@ -1617,6 +1627,7 @@ export function loadDependencies() {
                   ])
                 })
               )
+              .pipe(gulp.dest(sVendorLibsPathSrc))
               .pipe(gulp.dest(sVendorLibsPathDev))
               .on('end', resolve)
               .on('error', reject)
@@ -1629,9 +1640,8 @@ export function loadDependencies() {
           const sStylesheetName = sEntry.replace(/\.js$/, '.css')
           return fs.existsSync(path.resolve(__dirname, sStylesheetName))
             ? gulp
-                .src([sStylesheetName], {
-                  base: '/'
-                })
+                .src([sStylesheetName])
+                .pipe(gulp.dest(sVendorLibsPathSrc))
                 .pipe(gulp.dest(sVendorLibsPathDev))
                 .on('end', resolve)
                 .on('error', reject)
@@ -1671,7 +1681,8 @@ function loadDependenciesDist() {
     }
 
     const aDependencies = mainNpmFiles()
-    const sVendorLibsPath = NPM_MODULES_TARGET.path.replace(
+    const sVendorLibsPathSrc = pkg.ui5.vendor ? pkg.ui5.vendor.path : ''
+    const sVendorLibsPathDist = NPM_MODULES_TARGET.path.replace(
       new RegExp(`^${SRC}`),
       DIST
     )
@@ -1707,7 +1718,8 @@ function loadDependenciesDist() {
               )
               // minify scripts
               .pipe(uglify())
-              .pipe(gulp.dest(sVendorLibsPath))
+              .pipe(gulp.dest(sVendorLibsPathSrc))
+              .pipe(gulp.dest(sVendorLibsPathDist))
               .on('end', resolve)
               .on('error', reject)
           )
@@ -1727,7 +1739,8 @@ function loadDependenciesDist() {
                     level: 2
                   })
                 )
-                .pipe(gulp.dest(sVendorLibsPath))
+                .pipe(gulp.dest(sVendorLibsPathSrc))
+                .pipe(gulp.dest(sVendorLibsPathDist))
                 .on('end', resolve)
                 .on('error', reject)
             : resolve()
