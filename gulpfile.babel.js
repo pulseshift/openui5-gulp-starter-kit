@@ -1544,7 +1544,6 @@ export function loadDependencies() {
                   ])
                 })
               )
-              .pipe(gulp.dest(sVendorLibsPathSrc))
               .pipe(gulp.dest(sVendorLibsPathDev))
               .on('end', resolve)
               .on('error', reject)
@@ -1560,7 +1559,6 @@ export function loadDependencies() {
                 .src([sStylesheetName], {
                   base: '/'
                 })
-                .pipe(gulp.dest(sVendorLibsPathSrc))
                 .pipe(gulp.dest(sVendorLibsPathDev))
                 .on('end', resolve)
                 .on('error', reject)
@@ -1669,7 +1667,7 @@ function loadDependenciesDist() {
             .src(NPM_UI5_MODULES.map(oModule => `${oModule.path}/**/*`), {
               base: './'
             })
-            .pipe(gulp.dest(DEV))
+            .pipe(gulp.dest(DIST))
             .on('end', resolve)
             .on('error', reject)
         : resolve()
