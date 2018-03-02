@@ -8,37 +8,41 @@
 
     <title>{{secure indexTitle}}</title>
 
-    <script id="sap-ui-bootstrap"
-      src="{{secure src}}"
-      data-sap-ui-libs="sap.m"
-      data-sap-ui-theme="{{secure theme}}"
-      data-sap-ui-frameOptions="deny"
-      data-sap-ui-compatVersion="edge"
-      data-sap-ui-bindingSyntax="complex"
-      data-sap-ui-preload="async"
-      data-sap-ui-resourceroots='{{secure resourceroots}}'
-      data-sap-ui-theme-roots='{{secure themeroots}}'>
 
+    {{!-- FAVICONS --}}
+    {{secure favicons}}
+
+      <script id="sap-ui-bootstrap"
+        src="{{secure src}}"
+        data-sap-ui-libs="sap.m"
+        data-sap-ui-theme="{{secure theme}}"
+        data-sap-ui-frameOptions="deny"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-bindingSyntax="complex"
+        data-sap-ui-preload="async"
+        data-sap-ui-resourceroots='{{secure resourceroots}}'
+        data-sap-ui-theme-roots='{{secure themeroots}}'>
+
+        </script>
+
+      <script>
+        sap.ui.getCore().attachInit(function () {
+          // init component container
+          var oComponentContainer = new sap.ui.core.ComponentContainer({
+            height: '100%'
+          }).placeAt('content');
+
+          // init app component and load asynchroneously
+          sap.ui.component({
+            name: 'app.todo',
+            manifestFirst: true,
+            async: true
+          })
+            .then(function (oComponent) {
+              oComponentContainer.setComponent(oComponent)
+            });
+        });
       </script>
-
-    <script>
-      sap.ui.getCore().attachInit(function () {
-        // init component container
-        var oComponentContainer = new sap.ui.core.ComponentContainer({
-          height: '100%'
-        }).placeAt('content');
-
-        // init app component and load asynchroneously
-        sap.ui.component({
-          name: 'app.todo',
-          manifestFirst: true,
-          async: true
-        })
-          .then(function (oComponent) {
-            oComponentContainer.setComponent(oComponent)
-          });
-      });
-    </script>
   </head>
 
   <body class="sapUiBody"

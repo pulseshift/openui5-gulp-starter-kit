@@ -2,10 +2,10 @@ sap.ui.define(
   [
     'app/todo/controller/BaseController',
 
-    // load vendor libraries
+    // load vendor libraries (NEW: passed through as module and not loaded globally)
     'app/libs/moment'
   ],
-  function(BaseController) {
+  function(BaseController, moment) {
     return BaseController.extend('app.todo.controller.Main', {
       /* ----------------------------------------------------------- *
      * lifecycle methods
