@@ -1716,9 +1716,9 @@ function loadDependenciesDist() {
                   ])
                 })
               )
+              .pipe(gulp.dest(sVendorLibsPathSrc))
               // minify scripts
               .pipe(uglify())
-              .pipe(gulp.dest(sVendorLibsPathSrc))
               .pipe(gulp.dest(sVendorLibsPathDist))
               .on('end', resolve)
               .on('error', reject)
