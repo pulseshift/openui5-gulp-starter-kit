@@ -124,9 +124,9 @@ _Attention: comments are only for explanation, tehy can't be used in package.jso
         "version": "1.50.8"
       }
     },
-    
+
     // target path for 3rd party npm dependencies
-    // e.g. moment.js can then be required via sap.ui.define(['apps/libs/moment']function(moment){ ... }); 
+    // e.g. moment.js can then be required via sap.ui.define(['apps/libs/moment']function(moment){ ... });
     "vendor": {
       "name": "app.libs",
       "path": "src/libs"
