@@ -137,7 +137,7 @@
     "gulp-util": "^3.0.8",
     "handlebars": "^4.0.11",
     "husky": "^0.14.3",
-    "less": "^2.7.3",
+    "less": "^3.0.1",
     "less-plugin-autoprefix": "^1.5.1",
     "lint-staged": "^7.0.0",
     "ora": "^2.0.0",
