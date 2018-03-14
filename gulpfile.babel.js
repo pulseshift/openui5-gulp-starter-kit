@@ -999,18 +999,19 @@ function scriptsDist() {
           .pipe(plumber(buildErrorHandler))
           // babel will run with the settings defined in `.babelrc` file
           .pipe(babel())
-          // save non-minified copies with debug duffix
+          // save non-minified copies with debug suffix
           .pipe(
-            rename({
-              suffix: '-dbg'
+            rename(path => {
+              path.basename = /\.controller$/.test(path.basename)
+                ? path.basename.replace(/\.controller$/, '-dbg.controller')
+                : `${path.basename}-dbg`
             })
           )
           .pipe(gulp.dest(DIST))
           // process copies without suffix
           .pipe(
-            rename(oFile => {
-              oFile.basename = oFile.basename.replace(/-dbg$/, '')
-              return oFile
+            rename(path => {
+              path.basename = path.basename.replace(/-dbg$/, '')
             })
           )
           // minify scripts
@@ -1717,6 +1718,19 @@ function loadDependenciesDist() {
                 })
               )
               .pipe(gulp.dest(sVendorLibsPathSrc))
+              // save non-minified copies with debug suffix
+              .pipe(
+                rename({
+                  suffix: '-dbg'
+                })
+              )
+              .pipe(gulp.dest(sVendorLibsPathDist))
+              // process copies without suffix
+              .pipe(
+                rename(path => {
+                  path.basename = path.basename.replace(/-dbg$/, '')
+                })
+              )
               // minify scripts
               .pipe(uglify())
               .pipe(gulp.dest(sVendorLibsPathDist))
