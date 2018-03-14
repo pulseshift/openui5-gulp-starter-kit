@@ -1011,7 +1011,9 @@ function scriptsDist() {
           // process copies without suffix
           .pipe(
             rename(path => {
-              path.basename = path.basename.replace(/-dbg$/, '')
+              path.basename = /\.controller$/.test(path.basename)
+                ? path.basename.replace(/-dbg\.controller$/, '.controller')
+                : path.basename.replace(/-dbg$/, '')
             })
           )
           // minify scripts
