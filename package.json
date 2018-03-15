@@ -1,6 +1,6 @@
 {
   "name": "openui5-gulp-starter-kit",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "OpenUI5 template app build with gulp.",
   "keywords": [
     "pulseshift",
@@ -128,6 +128,7 @@
     "gulp-imagemin": "^4.1.0",
     "gulp-less": "^4.0.0",
     "gulp-main-npm-files": "^1.0.5",
+    "gulp-order": "^1.1.1",
     "gulp-plumber": "^1.2.0",
     "gulp-pretty-data": "^0.2.0",
     "gulp-rename": "^1.2.2",
@@ -149,7 +150,6 @@
     "vinyl-source-stream": "^2.0.0"
   },
   "dependencies": {
-    "gulp-order": "^1.1.1",
     "moment": "^2.20.1"
   }
 }
