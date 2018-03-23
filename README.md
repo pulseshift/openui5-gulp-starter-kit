@@ -1,5 +1,51 @@
 ![OpenUI5 Starter Kit](https://github.com/pulseshift/openui5-gulp-starter-kit/raw/master/UI5StarterKit.png)
 
+## Branch `nwabap`
+
+`nwabap` is the _OpenUI5 Starter Kit_ branch which allows a developer to upload SAPUI5/OpenUI5 sources into a SAP NetWeaver ABAP system as part of the Gulp task chain.
+
+The upload functionality is powered by [gulp-nwabap-ui5uploader](https://github.com/ilcgmbh/gulp-nwabap-ui5uploader).
+
+**Attention: In this exampple we use the `package.json` to store the user credentials for the SAP NetWeaver ABAP server. We recommend not to store any real credentials in any textfile of this repository. Hope this point is obvious.**
+
+Info: The cache buster is not supported in combination with SAP NetWeaver upload, yet.
+
+### How to use `nwabap` upload
+
+In the `package.json` you will find the connection and authorization configuration for the SAP NetWeaver ABAP system:
+
+```json
+"ui5": {
+    "cacheBuster": false,
+    "nwabapUpload": {
+      "conn": {
+        "server": "http://myserver:8000"
+      },
+      "auth": {
+        "user": "username",
+        "pwd": "password"
+      }
+    }
+}
+```
+
+Furthermore you can configure for each OpenUI5 app component an own BSP Destination (where to host the app on the SAP NetWeaver). Also this is done in the `ui5` section of the `packag.json`:
+
+```json
+"apps": [
+      {
+        "name": "app.todo",
+        "path": "src/openui5-todo-app",
+        "nwabapDestination": {
+          "package": "$TMP",
+          "bspcontainer": "ZZ_UI5_LOCAL",
+          "bspcontainer_text": "UI5 upload local objects",
+          "langauage": "EN"
+        }
+      }
+    ]
+```
+
 ## Quickstart
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/pulseshift/openui5-gulp-starter-kit.svg)](https://greenkeeper.io/)
@@ -93,6 +139,18 @@ _Attention: comments are only for explanation, tehy can't be used in package.jso
 
   // custom section with settings required for the build process
   "ui5": {
+    // abap server connection
+    "nwabapUpload": {
+      "conn": {
+        "server": "http://myserver:8000"
+      },
+      "auth": {
+        // please never publish a repo with your credentials anywhere (use this for test purposes only)
+        "user": "username",
+        "pwd": "password"
+      }
+    },
+
     // tite name of the index.html
     "indexTitle": "UI5 Todo App",
 
@@ -138,7 +196,15 @@ _Attention: comments are only for explanation, tehy can't be used in package.jso
     // list with custom ui5-component/app roots consisting of a 'name' and a 'path'
     "apps": [{
       "name": "app.todo",
-      "path": "src/openui5-todo-app"
+      "path": "src/openui5-todo-app",
+
+      // abab BSP destination of your app
+      "nwabapDestination": {
+          "package": "$TMP",
+          "bspcontainer": "ZZ_UI5_LOCAL",
+          "bspcontainer_text": "UI5 upload local objects",
+          "langauage": "EN"
+      }
     }],
 
     // list with custom ui5-library roots consisting of a 'name' and a 'path'

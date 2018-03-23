@@ -29,11 +29,13 @@ import cleanCSS from 'gulp-clean-css'
 import less from 'gulp-less'
 import tap from 'gulp-tap'
 import order from 'gulp-order'
+import touch from 'gulp-touch-cmd'
 import sourcemaps from 'gulp-sourcemaps'
 import ui5preload from 'gulp-ui5-preload'
 import mainNpmFiles from 'gulp-main-npm-files'
 import ui5Bust from 'ui5-cache-buster'
 import { ui5Download, ui5Build, ui5CompileLessLib } from 'ui5-lib-util'
+import ui5uploader from 'gulp-nwabap-ui5uploader'
 import browserify from 'browserify'
 import source from 'vinyl-source-stream'
 import buffer from 'vinyl-buffer'
@@ -89,7 +91,7 @@ const IS_DEV_MODE = process.env.NODE_ENV === 'development'
 const SRC = 'src'
 // path to development directory
 const DEV = '.tmp'
-// path to ditribution direcory
+// path to ditribution directory
 const DIST = 'dist'
 // path to ui5 repository
 const UI5 = IS_DEV_MODE ? 'ui5' : `${DIST}/ui5`
@@ -331,12 +333,84 @@ function logStatsDist(done) {
   spinner
     .succeed('Build successfull.')
     .print(' ')
-    .print(`Build entry: ${pkg.main}`)
+    .print(`Build entry:  ${pkg.main}`)
     .print(`Build output: ${path.resolve(__dirname, DIST)}`)
   logStatsCommons()
   done()
 }
 export { build }
+
+/**
+ * Gulp 'deploy' task (distribution mode).
+ * @description Deploy the complete app to run in production environment.
+ * @public
+ */
+const deploy = gulp.series(
+  logStartDeploy,
+  // TODO: add test task to run qunit and opa5 tests
+  build,
+  ui5Upload,
+  logStatsDeploy
+)
+
+// log start deploy message and start spinner
+function logStartDeploy(done) {
+  spinner.print(' ')
+  spinner.start('Deployment start...')
+  done()
+}
+
+// log deploy statistics and stop spinner
+function logStatsDeploy(done) {
+  const sSourceID = pkg.ui5.src
+  const oSource = pkg.ui5.srcLinks[sSourceID]
+  const sUI5Version = oSource.version
+  const sBackendServer = pkg.ui5.nwabapUpload.conn.server
+  const sOnlineUI5State =
+    !oSource.isArchive && oSource.isPrebuild ? '(remote)' : ''
+  const sUI5Details = !oSource.isPrebuild ? '(custom build)' : sOnlineUI5State
+
+  const aApps = pkg.ui5.apps || []
+  const iApps = aApps.length
+  const iThemes = (pkg.ui5.themes || []).length
+  const iLibs = (pkg.ui5.libraries || []).length
+
+  // print success message
+  spinner
+    .succeed('Deployment successfull.')
+    .print(' ')
+    .print(`Deployed entry:    ${pkg.main}`)
+    .print(`ABAP Server:       ${sBackendServer}`)
+    .print(' ')
+    .print('Apps uploaded:')
+    .print(' ')
+
+  aApps.forEach(oApp => {
+    const sDevPackage = oApp.nwabapDestination.package
+    const sBspContainer = oApp.nwabapDestination.bspcontainer
+    const sBspContainerText = oApp.nwabapDestination.bspcontainer_text
+    const sTransportNo = oApp.nwabapDestination.transportno
+
+    spinner
+      .print(`App name:          ${oApp.name}`)
+      .print(`ABAP Package:      ${sDevPackage}`)
+      .print(`BSP Container:     ${sBspContainer}`)
+      .print(`BSP Description:   ${sBspContainerText}`)
+      .print(`Transport Request: ${sTransportNo}`)
+      .print(' ')
+  })
+
+  spinner
+    .print(`UI5 Version: ${sUI5Version} ${sUI5Details}`)
+    .print(' ')
+    .print('UI5 assets created:')
+    .print(`\u{25FB}  ${iApps} app${iApps !== 1 ? 's' : ''}`)
+    .print(`\u{25FB}  ${iThemes} theme${iThemes !== 1 ? 's' : ''}`)
+    .print(`\u{25FB}  ${iLibs} librar${iLibs !== 1 ? 'ies' : 'y'}`)
+    .print(' ')
+  done()
+}
+export { deploy }
 
 /* ----------------------------------------------------------- *
  * watch files for changes
@@ -728,8 +802,8 @@ function entry() {
                 extname: '.html'
               })
             )
-            .on('error', reject)
             .pipe(gulp.dest(DEV))
+            .on('error', reject)
             .on('end', resolve)
         )
     )
@@ -777,9 +851,10 @@ function entryDist() {
                 extname: '.html'
               })
             )
-            .on('error', reject)
             .pipe(gulp.dest(DIST))
+            .on('error', reject)
             .on('end', resolve)
+            .pipe(touch())
         )
     )
 
@@ -1052,8 +1127,8 @@ function ui5preloads() {
               isLibrary: false
             })
           )
-          .on('error', reject)
           .pipe(gulp.dest(sDistAppPath))
+          .on('error', reject)
           .on('end', resolve)
       })
     })
@@ -1116,8 +1191,8 @@ function ui5LibPreloads() {
               })
             )
           )
-          .on('error', reject)
           .pipe(gulp.dest(sDistLibraryPath))
+          .on('error', reject)
           .on('end', resolve)
       })
     })
@@ -1245,8 +1320,8 @@ function ui5LibStylesDist() {
                     })
                   )
                   .pipe(gulp.dest(DIST))
-                  .on('end', resolve)
                   .on('error', reject)
+                  .on('end', resolve)
               )
           )
   } catch (error) {
@@ -1484,8 +1559,8 @@ function ui5ThemeStylesDist() {
                     })
                   )
                   .pipe(gulp.dest(DIST))
-                  .on('end', resolve)
                   .on('error', reject)
+                  .on('end', resolve)
               )
           )
   } catch (error) {
@@ -1556,8 +1631,8 @@ export function loadDependencies() {
               )
               .pipe(gulp.dest(sVendorLibsPathSrc))
               .pipe(gulp.dest(sVendorLibsPathDev))
-              .on('end', resolve)
               .on('error', reject)
+              .on('end', resolve)
           )
         })
     )
@@ -1570,8 +1645,8 @@ export function loadDependencies() {
                 .src([sStylesheetName])
                 .pipe(gulp.dest(sVendorLibsPathSrc))
                 .pipe(gulp.dest(sVendorLibsPathDev))
-                .on('end', resolve)
                 .on('error', reject)
+                .on('end', resolve)
             : resolve()
         })
     )
@@ -1583,8 +1658,8 @@ export function loadDependencies() {
               base: './'
             })
             .pipe(gulp.dest(DEV))
-            .on('end', resolve)
             .on('error', reject)
+            .on('end', resolve)
         : resolve()
     })
 
@@ -1660,8 +1735,8 @@ function loadDependenciesDist() {
               // minify scripts
               .pipe(uglify())
               .pipe(gulp.dest(sVendorLibsPathDist))
-              .on('end', resolve)
               .on('error', reject)
+              .on('end', resolve)
           )
         })
     )
@@ -1681,8 +1756,8 @@ function loadDependenciesDist() {
                 )
                 .pipe(gulp.dest(sVendorLibsPathSrc))
                 .pipe(gulp.dest(sVendorLibsPathDist))
-                .on('end', resolve)
                 .on('error', reject)
+                .on('end', resolve)
             : resolve()
         })
     )
@@ -1694,8 +1769,8 @@ function loadDependenciesDist() {
               base: './'
             })
             .pipe(gulp.dest(DIST))
-            .on('end', resolve)
             .on('error', reject)
+            .on('end', resolve)
         : resolve()
     })
 
@@ -1791,4 +1866,63 @@ function preCompressionBrotli() {
       )
       .pipe(gulp.dest(DIST))
   )
+}
+
+/* ----------------------------------------------------------- *
+ * SAP NetWeaver ABAP System UI5 app upload
+ * ----------------------------------------------------------- */
+
+// [production build]
+function ui5Upload() {
+  try {
+    // update spinner state
+    spinner.text = 'Uploading to SAP NetWeaver ABAP System...'
+
+    // check if cache buster is deactivated
+    if (pkg.ui5.cacheBuster === true) {
+      return Promise.reject(
+        `Cache buster is not supported in combination with nwabap upload, yet.`
+      )
+    }
+
+    // check if nwabap config is maintained
+    if (!pkg.ui5.nwabapUpload) {
+      return Promise.reject(
+        `Option 'ui5.nwabapUpload' config was not found in package.json`
+      )
+    }
+
+    const mapPathToDist = sPath => sPath.replace(new RegExp(`^${SRC}`), DIST)
+    const aDeployPromise = pkg.ui5.apps.map(oApp => {
+      // check if nwabap config is maintained
+      if (!oApp.nwabapDestination) {
+        return Promise.reject(
+          `Option 'nwabapDestination' config was not found for app ${
+            oApp.name
+          } in package.json`
+        )
+      }
+      const sAppDistPath = mapPathToDist(oApp.path)
+
+      return new Promise((resolve, reject) => {
+        gulp
+          .src([`${sAppDistPath}/**`])
+          .pipe(
+            ui5uploader({
+              root: sAppDistPath,
+              // pass conn and auth config
+              ...pkg.ui5.nwabapUpload,
+              // pass nwabap bsp destination
+              ui5: oApp.nwabapDestination
+            })
+          )
+          .pipe(gulp.dest(sAppDistPath))
+          .on('error', reject)
+          .on('end', resolve)
+      })
+    })
+    return Promise.all(aDeployPromise)
+  } catch (error) {
+    spinner.fail(error)
+  }
 }
