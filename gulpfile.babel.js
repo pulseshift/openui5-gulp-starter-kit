@@ -1116,7 +1116,8 @@ function ui5preloads() {
             `${sDistAppPath}/**/*.fragment.xml`,
             `${sDistAppPath}/**/manifest.json`,
             // don't bundle debug resources
-            `!${sDistAppPath}/**/*-dbg.js`
+            `!${sDistAppPath}/**/*-dbg.js`,
+            `!${sDistAppPath}/**/*-dbg.controller.js`
           ])
           .pipe(plumber(buildErrorHandler))
           .pipe(order())
@@ -1158,6 +1159,7 @@ function ui5LibPreloads() {
             `${sDistLibraryPath}/**/*.json`,
             // don't bundle debug or peload resources
             `!${sDistLibraryPath}/**/*-dbg.js`,
+            `!${sDistLibraryPath}/**/*-dbg.controller.js`,
             `!${sDistLibraryPath}/**/*-preload.js`
           ])
           .pipe(plumber(buildErrorHandler))
