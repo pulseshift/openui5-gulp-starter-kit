@@ -130,7 +130,7 @@
     "commander": "^2.13.0",
     "connect-gzip-static": "^2.1.1",
     "del": "^3.0.0",
-    "env-cmd": "^7.0.0",
+    "env-cmd": "^8.0.0",
     "eslint": "^4.8.0",
     "eslint-config-prettier": "^2.6.0",
     "eslint-plugin-babel": "^5.0.0",
