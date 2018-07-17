@@ -164,7 +164,7 @@
     "less": "^3.0.2",
     "less-plugin-autoprefix": "^1.5.1",
     "lint-staged": "^7.0.0",
-    "ora": "^2.0.0",
+    "ora": "^3.0.0",
     "prettier": "^1.10.2",
     "ui5-cache-buster": "^0.1.0",
     "ui5-lib-util": "^0.1.3",
