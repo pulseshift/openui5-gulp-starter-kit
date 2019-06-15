@@ -132,7 +132,7 @@
     "del": "^4.0.0",
     "env-cmd": "^7.0.0",
     "eslint": "^5.0.0",
-    "eslint-config-prettier": "^4.1.0",
+    "eslint-config-prettier": "^5.0.0",
     "eslint-plugin-babel": "^5.0.0",
     "eslint-plugin-prettier": "^3.0.0",
     "gulp": "4.0",
