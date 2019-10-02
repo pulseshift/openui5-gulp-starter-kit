@@ -9587,9 +9587,10 @@ uglify-to-browserify@~1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/uglify-to-browserify/-/uglify-to-browserify-1.0.2.tgz#6e0924d6bda6b5afe349e39a6d632850a0f882b7"
 
-ui5-cache-buster@^0.1.0:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/ui5-cache-buster/-/ui5-cache-buster-0.1.1.tgz#819282b92baba61e895a6b4ccef31d80edf86716"
+ui5-cache-buster@^0.2.2:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/ui5-cache-buster/-/ui5-cache-buster-0.2.2.tgz#d6d6293e5e490594b3afcf90c3bef7821d8b0096"
+  integrity sha512-WYXAbYsCuYbpKAUfxWrEyWS0RXi90vlKA/I6Khq9tlJ96hEAtXfEJV0isFlbMevaxx1vVUDmD25oqqjeTMdv8A==
   dependencies:
     gulp-util "^3.0.8"
     loader-utils "^1.1.0"
