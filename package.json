@@ -166,7 +166,7 @@
     "lint-staged": "^9.0.0",
     "ora": "^3.0.0",
     "prettier": "^1.10.2",
-    "ui5-cache-buster": "^0.1.0",
+    "ui5-cache-buster": "^0.2.2",
     "ui5-lib-util": "^0.1.3",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0"
