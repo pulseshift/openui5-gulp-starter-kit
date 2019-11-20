@@ -137,7 +137,7 @@
     "eslint-plugin-prettier": "^3.1.1",
     "gulp": "4.0.2",
     "gulp-babel": "^7.0.0",
-    "gulp-brotli": "^1.2.2",
+    "gulp-brotli": "^2.0.2",
     "gulp-clean-css": "^4.2.0",
     "gulp-cli": "^2.2.0",
     "gulp-favicons": "^2.3.1",
