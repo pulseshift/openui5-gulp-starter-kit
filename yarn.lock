@@ -4818,12 +4818,12 @@ gulp-babel@^7.0.0:
     through2 "^2.0.0"
     vinyl-sourcemaps-apply "^0.2.0"
 
-gulp-brotli@^1.2.2:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/gulp-brotli/-/gulp-brotli-1.2.2.tgz#4d653c8cb4b04c93629dd2f7a9bd343fd5b4eb90"
-  integrity sha512-M04zrlaggYBfA7RfXQ7kR9wjmBbdzW0kiMqEGzjHFx6bICNbgkUCkem7yhB9bsWEKufzg8IJeSXGjxPH5CkOxA==
+gulp-brotli@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/gulp-brotli/-/gulp-brotli-2.0.2.tgz#1781a94c5a8db6a20c232fd8804253e926973345"
+  integrity sha512-7pE50IwgeEGfkGSAf0UQHyWIqp9/ttDsoC627zgUhggtGwBh9E4LqiH/7PC/zvIR9pUK6ufDLmLP9HQb5/V8tA==
   dependencies:
-    iltorb "^2.4.3"
+    plugin-error "^1.0.1"
     through2 "^3.0.1"
 
 gulp-clean-css@^4.2.0:
@@ -5430,17 +5430,6 @@ ignore@^5.1.1:
   version "5.1.4"
   resolved "https://registry.yarnpkg.com/ignore/-/ignore-5.1.4.tgz#84b7b3dbe64552b6ef0eca99f6743dbec6d97adf"
   integrity sha512-MzbUSahkTW1u7JpKKjY7LCARd1fU5W2rLdxlM4kdkayuCwZImjkpluF9CM1aLewYJguPDqewLam18Y6AU69A8A==
-
-iltorb@^2.4.3:
-  version "2.4.4"
-  resolved "https://registry.yarnpkg.com/iltorb/-/iltorb-2.4.4.tgz#7ec303bbbd8c0cd4d44a847eb6c6d8490f9c7433"
-  integrity sha512-7Qk6O7TK3rSWVRVRkPehcNTSN+P2i7MsG9pWmw6iVw/W6NcoNj0rFKOuBDM6fbZV6NNGuUW3JBRem6Ozn4KXhg==
-  dependencies:
-    detect-libc "^1.0.3"
-    nan "^2.14.0"
-    npmlog "^4.1.2"
-    prebuild-install "^5.3.2"
-    which-pm-runs "^1.0.0"
 
 image-size@^0.5.0, image-size@~0.5.0:
   version "0.5.5"
@@ -7310,7 +7299,7 @@ mute-stream@0.0.7:
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.7.tgz#3075ce93bc21b8fab43e1bc4da7e8115ed1e7bab"
   integrity sha1-MHXOk7whuPq0PhvE2n6BFe0ee6s=
 
-nan@^2.12.1, nan@^2.13.2, nan@^2.14.0:
+nan@^2.12.1, nan@^2.13.2:
   version "2.14.0"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.14.0.tgz#7818f722027b2459a86f0295d434d1fc2336c52c"
   integrity sha512-INOFj37C7k3AfaNTtX8RhsTw7qRy7eLET14cROi9+5HAVbbHuIWUHEauBv5qT4Av2tWasiTY1Jw6puUNqRJXQg==
@@ -8261,7 +8250,7 @@ postcss@^6.0.22, postcss@^6.0.23:
     source-map "^0.6.1"
     supports-color "^5.4.0"
 
-prebuild-install@^5.3.0, prebuild-install@^5.3.2:
+prebuild-install@^5.3.0:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/prebuild-install/-/prebuild-install-5.3.2.tgz#6392e9541ac0b879ef0f22b3d65037417eb2035e"
   integrity sha512-INDfXzTPnhT+WYQemqnAXlP7SvfiFMopMozSgXCZ+RDLb279gKfIuLk4o7PgEawLp3WrMgIYGBpkxpraROHsSA==
