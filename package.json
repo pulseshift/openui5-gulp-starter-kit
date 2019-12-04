@@ -152,7 +152,7 @@
     "gulp-order": "^1.2.0",
     "gulp-plumber": "^1.2.1",
     "gulp-pretty-data": "^0.2.0",
-    "gulp-rename": "1.4.0",
+    "gulp-rename": "2.0.0",
     "gulp-sourcemaps": "^2.6.5",
     "gulp-tap": "2.0.0",
     "gulp-touch-cmd": "^0.0.1",
