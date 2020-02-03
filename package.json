@@ -127,7 +127,7 @@
     "babelify": "^8.0.0",
     "browser-sync": "^2.26.7",
     "browserify": "^16.5.0",
-    "commander": "^3.0.2",
+    "commander": "^4.1.1",
     "connect-gzip-static": "^2.1.1",
     "del": "5.1.0",
     "env-cmd": "^10.0.1",
